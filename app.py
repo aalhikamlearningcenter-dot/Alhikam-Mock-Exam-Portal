@@ -1149,6 +1149,830 @@ Logout
         exams=exams,
     )
 
+# ============================================================
+# START EXAM
+# ============================================================
+
+@app.route("/exam/<int:exam_id>/start")
+@role_required("student")
+def start_exam(exam_id):
+
+    user = current_user()
+
+    conn = get_db()
+
+    exam = conn.execute("""
+        SELECT
+            exams.*,
+            subjects.name AS subject_name
+        FROM exams
+        JOIN subjects
+            ON subjects.id = exams.subject_id
+        WHERE exams.id = ?
+          AND exams.status = 'published'
+    """, (exam_id,)).fetchone()
+
+    if not exam:
+        conn.close()
+        return "Exam not found or not available.", 404
+
+    questions = conn.execute("""
+        SELECT
+            questions.id,
+            questions.question_text,
+            questions.option_a,
+            questions.option_b,
+            questions.option_c,
+            questions.option_d
+        FROM exam_questions
+        JOIN questions
+            ON questions.id = exam_questions.question_id
+        WHERE exam_questions.exam_id = ?
+          AND questions.status = 'approved'
+        ORDER BY exam_questions.id ASC
+    """, (exam_id,)).fetchall()
+
+    conn.close()
+
+    if not questions:
+        return "This exam has no approved questions yet.", 400
+
+    # Create a new attempt
+    conn = get_db()
+
+    cursor = conn.execute("""
+        INSERT INTO attempts
+        (
+            exam_id,
+            student_id,
+            total_questions
+        )
+        VALUES (?, ?, ?)
+    """, (
+        exam_id,
+        user["id"],
+        len(questions),
+    ))
+
+    attempt_id = cursor.lastrowid
+
+    conn.commit()
+    conn.close()
+
+    return render_template_string("""
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>{{ exam["title"] }}</title>
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1">
+
+<style>
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f7f6;
+    margin: 0;
+}
+
+.header {
+    background: #087f5b;
+    color: white;
+    padding: 15px;
+    position: sticky;
+    top: 0;
+}
+
+.container {
+    max-width: 800px;
+    margin: auto;
+    padding: 20px;
+}
+
+.timer {
+    background: #222;
+    color: white;
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 20px;
+    margin-bottom: 20px;
+}
+
+.question {
+    display: none;
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+}
+
+.question.active {
+    display: block;
+}
+
+.option {
+    display: block;
+    padding: 14px;
+    margin: 10px 0;
+    background: #f1f3f5;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.option:hover {
+    background: #e6f4ef;
+}
+
+.navigation {
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+}
+
+button {
+    padding: 12px 20px;
+    border: 0;
+    border-radius: 7px;
+    cursor: pointer;
+}
+
+.next {
+    background: #087f5b;
+    color: white;
+}
+
+.previous {
+    background: #555;
+    color: white;
+}
+
+.submit {
+    background: #c92a2a;
+    color: white;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+
+<strong>
+{{ exam["title"] }}
+</strong>
+
+</div>
+
+<div class="container">
+
+<div class="timer">
+Time remaining:
+<span id="timer">
+{{ exam["duration_minutes"] }}:00
+</span>
+</div>
+
+<form
+    method="POST"
+    action="{{ url_for('submit_exam', attempt_id=attempt_id) }}"
+    id="examForm"
+>
+
+{% for question in questions %}
+
+<div
+    class="question {% if loop.first %}active{% endif %}"
+    data-index="{{ loop.index0 }}"
+>
+
+<h3>
+Question {{ loop.index }}
+of {{ questions|length }}
+</h3>
+
+<p>
+{{ question["question_text"] }}
+</p>
+
+<label class="option">
+<input
+    type="radio"
+    name="question_{{ question["id"] }}"
+    value="A"
+>
+A. {{ question["option_a"] }}
+</label>
+
+<label class="option">
+<input
+    type="radio"
+    name="question_{{ question["id"] }}"
+    value="B"
+>
+B. {{ question["option_b"] }}
+</label>
+
+<label class="option">
+<input
+    type="radio"
+    name="question_{{ question["id"] }}"
+    value="C"
+>
+C. {{ question["option_c"] }}
+</label>
+
+<label class="option">
+<input
+    type="radio"
+    name="question_{{ question["id"] }}"
+    value="D"
+>
+D. {{ question["option_d"] }}
+</label>
+
+</div>
+
+{% endfor %}
+
+<div class="navigation">
+
+<button
+    type="button"
+    class="previous"
+    onclick="previousQuestion()"
+>
+Previous
+</button>
+
+<button
+    type="button"
+    class="next"
+    onclick="nextQuestion()"
+    id="nextButton"
+>
+Next
+</button>
+
+<button
+    type="submit"
+    class="submit"
+    id="submitButton"
+    style="display:none;"
+>
+Submit Exam
+</button>
+
+</div>
+
+</form>
+
+</div>
+
+<script>
+
+let currentQuestion = 0;
+
+const questions =
+    document.querySelectorAll(".question");
+
+const nextButton =
+    document.getElementById("nextButton");
+
+const submitButton =
+    document.getElementById("submitButton");
+
+
+function showQuestion(index) {
+
+    questions.forEach(
+        function(question, i) {
+
+            question.classList.toggle(
+                "active",
+                i === index
+            );
+
+        }
+    );
+
+    if (index === questions.length - 1) {
+
+        nextButton.style.display = "none";
+
+        submitButton.style.display = "inline-block";
+
+    } else {
+
+        nextButton.style.display = "inline-block";
+
+        submitButton.style.display = "none";
+
+    }
+
+}
+
+
+function nextQuestion() {
+
+    if (currentQuestion < questions.length - 1) {
+
+        currentQuestion++;
+
+        showQuestion(currentQuestion);
+
+    }
+
+}
+
+
+function previousQuestion() {
+
+    if (currentQuestion > 0) {
+
+        currentQuestion--;
+
+        showQuestion(currentQuestion);
+
+    }
+
+}
+
+
+/* =========================================================
+   TIMER
+   ========================================================= */
+
+let totalSeconds =
+    {{ exam["duration_minutes"] }} * 60;
+
+
+function updateTimer() {
+
+    const minutes =
+        Math.floor(totalSeconds / 60);
+
+    const seconds =
+        totalSeconds % 60;
+
+    document.getElementById("timer").innerText =
+        String(minutes).padStart(2, "0")
+        + ":"
+        + String(seconds).padStart(2, "0");
+
+
+    if (totalSeconds <= 0) {
+
+        document.getElementById(
+            "examForm"
+        ).submit();
+
+        return;
+
+    }
+
+    totalSeconds--;
+
+}
+
+
+setInterval(
+    updateTimer,
+    1000
+);
+
+updateTimer();
+
+
+/* =========================================================
+   PREVENT ACCIDENTAL PAGE LEAVE
+   ========================================================= */
+
+window.addEventListener(
+    "beforeunload",
+    function(event) {
+
+        event.preventDefault();
+
+        event.returnValue = "";
+
+    }
+);
+
+</script>
+
+</body>
+
+</html>
+""",
+        exam=exam,
+        questions=questions,
+        attempt_id=attempt_id,
+    )
+
+
+# ============================================================
+# SUBMIT EXAM
+# ============================================================
+
+@app.route(
+    "/exam/submit/<int:attempt_id>",
+    methods=["POST"]
+)
+@role_required("student")
+def submit_exam(attempt_id):
+
+    user = current_user()
+
+    conn = get_db()
+
+    attempt = conn.execute("""
+        SELECT *
+        FROM attempts
+        WHERE id = ?
+          AND student_id = ?
+    """, (
+        attempt_id,
+        user["id"],
+    )).fetchone()
+
+    if not attempt:
+
+        conn.close()
+
+        return "Exam attempt not found.", 404
+
+
+    # Prevent submitting same attempt twice
+
+    if attempt["submitted_at"]:
+
+        conn.close()
+
+        return redirect(
+            url_for(
+                "exam_result",
+                attempt_id=attempt_id
+            )
+        )
+
+
+    questions = conn.execute("""
+        SELECT
+            questions.id,
+            questions.correct_answer
+        FROM exam_questions
+        JOIN questions
+            ON questions.id = exam_questions.question_id
+        WHERE exam_questions.exam_id = ?
+    """, (
+        attempt["exam_id"],
+    )).fetchall()
+
+
+    score = 0
+
+
+    for question in questions:
+
+        question_id = question["id"]
+
+        selected_answer = request.form.get(
+            f"question_{question_id}"
+        )
+
+        is_correct = 0
+
+
+        if (
+            selected_answer
+            and selected_answer.upper()
+            == question["correct_answer"].upper()
+        ):
+
+            is_correct = 1
+
+            score += 1
+
+
+        conn.execute("""
+            INSERT INTO answers
+            (
+                attempt_id,
+                question_id,
+                selected_answer,
+                is_correct
+            )
+            VALUES (?, ?, ?, ?)
+        """, (
+            attempt_id,
+            question_id,
+            selected_answer,
+            is_correct,
+        ))
+
+
+    total_questions = len(questions)
+
+    percentage = 0
+
+    if total_questions > 0:
+
+        percentage = (
+            score / total_questions
+        ) * 100
+
+
+    conn.execute("""
+        UPDATE attempts
+
+        SET
+            score = ?,
+            total_questions = ?,
+            percentage = ?,
+            submitted_at = CURRENT_TIMESTAMP
+
+        WHERE id = ?
+    """, (
+        score,
+        total_questions,
+        percentage,
+        attempt_id,
+    ))
+
+
+    conn.commit()
+
+    conn.close()
+
+
+    return redirect(
+        url_for(
+            "exam_result",
+            attempt_id=attempt_id
+        )
+    )
+
+
+# ============================================================
+# EXAM RESULT
+# ============================================================
+
+@app.route(
+    "/exam/result/<int:attempt_id>"
+)
+@role_required("student")
+def exam_result(attempt_id):
+
+    user = current_user()
+
+    conn = get_db()
+
+    result = conn.execute("""
+        SELECT
+            attempts.*,
+            exams.title,
+            subjects.name AS subject_name
+        FROM attempts
+        JOIN exams
+            ON exams.id = attempts.exam_id
+        JOIN subjects
+            ON subjects.id = exams.subject_id
+        WHERE attempts.id = ?
+          AND attempts.student_id = ?
+    """, (
+        attempt_id,
+        user["id"],
+    )).fetchone()
+
+
+    if not result:
+
+        conn.close()
+
+        return "Result not found.", 404
+
+
+    answers = conn.execute("""
+        SELECT
+            answers.*,
+            questions.question_text,
+            questions.option_a,
+            questions.option_b,
+            questions.option_c,
+            questions.option_d,
+            questions.correct_answer,
+            questions.explanation
+        FROM answers
+        JOIN questions
+            ON questions.id = answers.question_id
+        WHERE answers.attempt_id = ?
+        ORDER BY answers.id ASC
+    """, (
+        attempt_id,
+    )).fetchall()
+
+
+    conn.close()
+
+
+    return render_template_string("""
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Exam Result</title>
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1">
+
+<style>
+
+body {
+    font-family: Arial;
+    background: #f4f7f6;
+}
+
+.container {
+    max-width: 800px;
+    margin: auto;
+    padding: 20px;
+}
+
+.result {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    text-align: center;
+}
+
+.score {
+    font-size: 40px;
+    font-weight: bold;
+    color: #087f5b;
+}
+
+.answer {
+    background: white;
+    padding: 20px;
+    margin-top: 15px;
+    border-radius: 12px;
+}
+
+.correct {
+    color: green;
+}
+
+.wrong {
+    color: red;
+}
+
+.btn {
+    display: inline-block;
+    padding: 12px 20px;
+    background: #087f5b;
+    color: white;
+    text-decoration: none;
+    border-radius: 7px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="result">
+
+<h2>
+{{ result["title"] }}
+</h2>
+
+<p>
+{{ result["subject_name"] }}
+</p>
+
+<div class="score">
+
+{{ result["score"] }}/{{ result["total_questions"] }}
+
+</div>
+
+<h3>
+{{ "%.2f"|format(result["percentage"]) }}%
+</h3>
+
+<p>
+Exam completed successfully.
+</p>
+
+<a
+    class="btn"
+    href="{{ url_for('dashboard') }}"
+>
+Back to Dashboard
+</a>
+
+</div>
+
+
+<h2>
+Answer Review
+</h2>
+
+
+{% for answer in answers %}
+
+<div class="answer">
+
+<h3>
+Question {{ loop.index }}
+</h3>
+
+<p>
+{{ answer["question_text"] }}
+</p>
+
+<p>
+
+Your answer:
+
+<strong>
+
+{% if answer["selected_answer"] %}
+
+{{ answer["selected_answer"] }}
+
+{% else %}
+
+Not answered
+
+{% endif %}
+
+</strong>
+
+</p>
+
+
+<p>
+
+Correct answer:
+
+<strong>
+{{ answer["correct_answer"] }}
+</strong>
+
+</p>
+
+
+{% if answer["is_correct"] %}
+
+<p class="correct">
+✓ Correct
+</p>
+
+{% else %}
+
+<p class="wrong">
+✗ Wrong
+</p>
+
+{% endif %}
+
+
+{% if answer["explanation"] %}
+
+<p>
+<strong>
+Explanation:
+</strong>
+
+{{ answer["explanation"] }}
+
+</p>
+
+{% endif %}
+
+</div>
+
+{% endfor %}
+
+</div>
+
+</body>
+
+</html>
+""",
+        result=result,
+        answers=answers,
+    )
 
 # ============================================================
 # LOGOUT
