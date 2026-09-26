@@ -2426,23 +2426,26 @@ def admin_questions():
 
     conn = get_db()
 
-    question_count = conn.execute("""
-        SELECT COUNT(*)
-        FROM questions
-    """).fetchone()[0]
-
+    # Get every question directly
     questions = conn.execute("""
-        SELECT *
+        SELECT
+            id,
+            subject_id,
+            tutor_id,
+            question_text,
+            option_a,
+            option_b,
+            option_c,
+            option_d,
+            correct_answer,
+            explanation,
+            status
         FROM questions
         ORDER BY id DESC
     """).fetchall()
 
-    print("====================================")
-    print("ADMIN QUESTIONS DEBUG")
-    print("QUESTION COUNT:", question_count)
-    print("QUESTIONS LENGTH:", len(questions))
-    print("DATABASE:", DATABASE)
-    print("====================================")
+    # Convert SQLite rows to normal dictionaries
+    questions = [dict(q) for q in questions]
 
     conn.close()
 
@@ -2480,8 +2483,7 @@ body {
 
 .question {
     border-top: 1px solid #ddd;
-    padding-top: 20px;
-    margin-top: 20px;
+    padding: 20px 0;
 }
 
 button {
@@ -2519,6 +2521,13 @@ button {
     background: #fff3cd;
     padding: 12px;
     border-radius: 7px;
+    margin-bottom: 10px;
+}
+
+.empty {
+    background: #fff3cd;
+    padding: 15px;
+    border-radius: 8px;
 }
 
 </style>
@@ -2552,6 +2561,8 @@ Question Management
 All Questions
 </h3>
 
+{% if questions %}
+
 {% for question in questions %}
 
 <div class="question">
@@ -2563,27 +2574,28 @@ All Questions
 </p>
 
 <p>
-Question ID:
+<strong>Question ID:</strong>
 {{ question["id"] }}
 </p>
 
 <p>
-Subject ID:
+<strong>Subject ID:</strong>
 {{ question["subject_id"] }}
 </p>
 
 <p>
-Tutor ID:
+<strong>Tutor ID:</strong>
 {{ question["tutor_id"] }}
 </p>
 
 <p>
-Correct Answer:
+<strong>Correct Answer:</strong>
 {{ question["correct_answer"] }}
 </p>
 
 <p>
-Status:
+
+<strong>Status:</strong>
 
 {% if question["status"] == "approved" %}
 
@@ -2661,13 +2673,19 @@ Reject
 
 </div>
 
+{% endfor %}
+
 {% else %}
 
-<p>
-No questions available.
-</p>
+<div class="empty">
 
-{% endfor %}
+<strong>
+No questions available.
+</strong>
+
+</div>
+
+{% endif %}
 
 </div>
 
@@ -2681,7 +2699,9 @@ No questions available.
 </body>
 
 </html>
-""")
+""",
+        questions=questions
+    )
 
 # ============================================================
 # ADMIN - QUESTION STATUS
