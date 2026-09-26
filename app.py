@@ -23,10 +23,8 @@ app.secret_key = os.getenv(
     "SECRET_KEY",
     "alhikam-mock-change-this-secret-key",
 )
+DATABASE = os.getenv("DATABASE_PATH", "/app/mock_exam.db")
 
-DATABASE = os.getenv(
-    "DATABASE_PATH",
-    "mock_exam.db",
 )
 
 
