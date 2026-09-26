@@ -2426,12 +2426,23 @@ def admin_questions():
 
     conn = get_db()
 
-    # Get ALL questions directly from questions table
+    question_count = conn.execute("""
+        SELECT COUNT(*)
+        FROM questions
+    """).fetchone()[0]
+
     questions = conn.execute("""
         SELECT *
         FROM questions
         ORDER BY id DESC
     """).fetchall()
+
+    print("====================================")
+    print("ADMIN QUESTIONS DEBUG")
+    print("QUESTION COUNT:", question_count)
+    print("QUESTIONS LENGTH:", len(questions))
+    print("DATABASE:", DATABASE)
+    print("====================================")
 
     conn.close()
 
