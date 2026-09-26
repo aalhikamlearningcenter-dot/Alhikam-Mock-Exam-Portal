@@ -22,10 +22,16 @@ app = Flask(__name__)
 app.secret_key = os.getenv(
     "SECRET_KEY",
     "alhikam-mock-change-this-secret-key",
+)
 
 
-DATABASE = os.getenv("DATABASE_PATH", "/app/mock_exam.db")
+# ============================================================
+# DATABASE CONFIGURATION
+# ============================================================
 
+DATABASE = os.getenv(
+    "DATABASE_PATH",
+    "/app/mock_exam.db",
 )
 
 
@@ -35,7 +41,10 @@ DATABASE = os.getenv("DATABASE_PATH", "/app/mock_exam.db")
 
 def get_db():
 
-    conn = sqlite3.connect(DATABASE)
+    conn = sqlite3.connect(
+        DATABASE,
+        timeout=30,
+    )
 
     conn.row_factory = sqlite3.Row
 
@@ -48,140 +57,146 @@ def init_db():
 
     conn = get_db()
 
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            full_name TEXT NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            role TEXT NOT NULL DEFAULT 'student',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
+    try:
 
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS subjects (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE NOT NULL
-        )
-    """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                full_name TEXT NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'student',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
 
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS questions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            subject_id INTEGER NOT NULL,
-            tutor_id INTEGER NOT NULL,
-            question_text TEXT NOT NULL,
-            option_a TEXT NOT NULL,
-            option_b TEXT NOT NULL,
-            option_c TEXT NOT NULL,
-            option_d TEXT NOT NULL,
-            correct_answer TEXT NOT NULL,
-            explanation TEXT,
-            status TEXT NOT NULL DEFAULT 'pending',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS subjects (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT UNIQUE NOT NULL
+            )
+        """)
 
-            FOREIGN KEY (subject_id)
-                REFERENCES subjects(id),
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS questions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                subject_id INTEGER NOT NULL,
+                tutor_id INTEGER NOT NULL,
+                question_text TEXT NOT NULL,
+                option_a TEXT NOT NULL,
+                option_b TEXT NOT NULL,
+                option_c TEXT NOT NULL,
+                option_d TEXT NOT NULL,
+                correct_answer TEXT NOT NULL,
+                explanation TEXT,
+                status TEXT NOT NULL DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-            FOREIGN KEY (tutor_id)
-                REFERENCES users(id)
-        )
-    """)
+                FOREIGN KEY (subject_id)
+                    REFERENCES subjects(id),
 
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS exams (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            subject_id INTEGER NOT NULL,
-            duration_minutes INTEGER NOT NULL DEFAULT 30,
-            total_questions INTEGER NOT NULL DEFAULT 0,
-            status TEXT NOT NULL DEFAULT 'draft',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (tutor_id)
+                    REFERENCES users(id)
+            )
+        """)
 
-            FOREIGN KEY (subject_id)
-                REFERENCES subjects(id)
-        )
-    """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS exams (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                subject_id INTEGER NOT NULL,
+                duration_minutes INTEGER NOT NULL DEFAULT 30,
+                total_questions INTEGER NOT NULL DEFAULT 0,
+                status TEXT NOT NULL DEFAULT 'draft',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS exam_questions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            exam_id INTEGER NOT NULL,
-            question_id INTEGER NOT NULL,
+                FOREIGN KEY (subject_id)
+                    REFERENCES subjects(id)
+            )
+        """)
 
-            FOREIGN KEY (exam_id)
-                REFERENCES exams(id),
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS exam_questions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                exam_id INTEGER NOT NULL,
+                question_id INTEGER NOT NULL,
 
-            FOREIGN KEY (question_id)
-                REFERENCES questions(id)
-        )
-    """)
+                FOREIGN KEY (exam_id)
+                    REFERENCES exams(id),
 
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS attempts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            exam_id INTEGER NOT NULL,
-            student_id INTEGER NOT NULL,
-            score INTEGER NOT NULL DEFAULT 0,
-            total_questions INTEGER NOT NULL DEFAULT 0,
-            percentage REAL NOT NULL DEFAULT 0,
-            started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            submitted_at TIMESTAMP,
+                FOREIGN KEY (question_id)
+                    REFERENCES questions(id)
+            )
+        """)
 
-            FOREIGN KEY (exam_id)
-                REFERENCES exams(id),
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS attempts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                exam_id INTEGER NOT NULL,
+                student_id INTEGER NOT NULL,
+                score INTEGER NOT NULL DEFAULT 0,
+                total_questions INTEGER NOT NULL DEFAULT 0,
+                percentage REAL NOT NULL DEFAULT 0,
+                started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                submitted_at TIMESTAMP,
 
-            FOREIGN KEY (student_id)
-                REFERENCES users(id)
-        )
-    """)
+                FOREIGN KEY (exam_id)
+                    REFERENCES exams(id),
 
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS answers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            attempt_id INTEGER NOT NULL,
-            question_id INTEGER NOT NULL,
-            selected_answer TEXT,
-            is_correct INTEGER NOT NULL DEFAULT 0,
+                FOREIGN KEY (student_id)
+                    REFERENCES users(id)
+            )
+        """)
 
-            FOREIGN KEY (attempt_id)
-                REFERENCES attempts(id),
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS answers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                attempt_id INTEGER NOT NULL,
+                question_id INTEGER NOT NULL,
+                selected_answer TEXT,
+                is_correct INTEGER NOT NULL DEFAULT 0,
 
-            FOREIGN KEY (question_id)
-                REFERENCES questions(id)
-        )
-    """)
+                FOREIGN KEY (attempt_id)
+                    REFERENCES attempts(id),
 
-    subjects = [
-        "Biology",
-        "Chemistry",
-        "Physics",
-        "Mathematics",
-        "English",
-        "Agricultural Science",
-        "Geography",
-        "Economics",
-        "Government",
-        "Literature",
-        "History",
-        "CRS",
-        "IRS",
-    ]
+                FOREIGN KEY (question_id)
+                    REFERENCES questions(id)
+            )
+        """)
 
-    for subject in subjects:
+        subjects = [
+            "Biology",
+            "Chemistry",
+            "Physics",
+            "Mathematics",
+            "English",
+            "Agricultural Science",
+            "Geography",
+            "Economics",
+            "Government",
+            "Literature",
+            "History",
+            "CRS",
+            "IRS",
+        ]
 
-        conn.execute(
-            """
-            INSERT OR IGNORE INTO subjects (name)
-            VALUES (?)
-            """,
-            (subject,),
-        )
+        for subject in subjects:
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO subjects (name)
+                VALUES (?)
+                """,
+                (subject,),
+            )
 
-    conn.commit()
+        conn.commit()
 
-    conn.close()
+    except Exception:
+        conn.rollback()
+        raise
+
+    finally:
+        conn.close()
 
 
 # ============================================================
