@@ -22,7 +22,8 @@ app = Flask(__name__)
 app.secret_key = os.getenv(
     "SECRET_KEY",
     "alhikam-mock-change-this-secret-key",
-)
+
+
 DATABASE = os.getenv("DATABASE_PATH", "/app/mock_exam.db")
 
 )
