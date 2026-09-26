@@ -2361,9 +2361,9 @@ def admin_questions():
             subjects.name AS subject_name,
             users.full_name AS tutor_name
         FROM questions
-        JOIN subjects
+        LEFT JOIN subjects
             ON subjects.id = questions.subject_id
-        JOIN users
+        LEFT JOIN users
             ON users.id = questions.tutor_id
         ORDER BY questions.id DESC
     """).fetchall()
@@ -2488,12 +2488,12 @@ All Questions
 
 <p>
 Subject:
-{{ question["subject_name"] }}
+{{ question["subject_name"] or "Unknown Subject" }}
 </p>
 
 <p>
 Tutor:
-{{ question["tutor_name"] }}
+{{ question["tutor_name"] or "Unknown Tutor" }}
 </p>
 
 <p>
