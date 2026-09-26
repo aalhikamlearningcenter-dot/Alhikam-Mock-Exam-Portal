@@ -2415,6 +2415,7 @@ Logout
     )
 
 
+
 # ============================================================
 # ADMIN - QUESTION MANAGEMENT
 # ============================================================
@@ -2425,17 +2426,11 @@ def admin_questions():
 
     conn = get_db()
 
+    # Get ALL questions directly from questions table
     questions = conn.execute("""
-        SELECT
-            questions.*,
-            subjects.name AS subject_name,
-            users.full_name AS tutor_name
+        SELECT *
         FROM questions
-        LEFT JOIN subjects
-            ON subjects.id = questions.subject_id
-        LEFT JOIN users
-            ON users.id = questions.tutor_id
-        ORDER BY questions.id DESC
+        ORDER BY id DESC
     """).fetchall()
 
     conn.close()
@@ -2557,13 +2552,18 @@ All Questions
 </p>
 
 <p>
-Subject:
-{{ question["subject_name"] or "Unknown Subject" }}
+Question ID:
+{{ question["id"] }}
 </p>
 
 <p>
-Tutor:
-{{ question["tutor_name"] or "Unknown Tutor" }}
+Subject ID:
+{{ question["subject_id"] }}
+</p>
+
+<p>
+Tutor ID:
+{{ question["tutor_id"] }}
 </p>
 
 <p>
@@ -2671,7 +2671,6 @@ No questions available.
 
 </html>
 """)
-
 
 # ============================================================
 # ADMIN - QUESTION STATUS
