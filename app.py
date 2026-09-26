@@ -1558,6 +1558,10 @@ def tutor_new_question():
             ""
         ).strip()
 
+        # ----------------------------------------------------
+        # VALIDATE REQUIRED FIELDS
+        # ----------------------------------------------------
+
         if not all([
             subject_id,
             question_text,
@@ -1576,6 +1580,10 @@ def tutor_new_question():
                 url_for("tutor_new_question")
             )
 
+        # ----------------------------------------------------
+        # VALIDATE CORRECT ANSWER
+        # ----------------------------------------------------
+
         if correct_answer not in {
             "A",
             "B",
@@ -1593,31 +1601,54 @@ def tutor_new_question():
 
         conn = get_db()
 
-        subject = conn.execute("""
-            SELECT id
-            FROM subjects
-            WHERE id = ?
-        """, (
-            subject_id,
-        )).fetchone()
+        try:
 
-        if not subject:
+            # ------------------------------------------------
+            # CHECK SUBJECT
+            # ------------------------------------------------
 
-            conn.close()
-
-            flash(
-                "Selected subject does not exist."
-            )
-
-            return redirect(
-                url_for("tutor_new_question")
-            )
-
-        conn.execute("""
-            INSERT INTO questions
-            (
+            subject = conn.execute("""
+                SELECT id
+                FROM subjects
+                WHERE id = ?
+            """, (
                 subject_id,
-                tutor_id,
+            )).fetchone()
+
+            if not subject:
+
+                flash(
+                    "Selected subject does not exist."
+                )
+
+                conn.close()
+
+                return redirect(
+                    url_for("tutor_new_question")
+                )
+
+            # ------------------------------------------------
+            # INSERT QUESTION
+            # ------------------------------------------------
+
+            cursor = conn.execute("""
+                INSERT INTO questions
+                (
+                    subject_id,
+                    tutor_id,
+                    question_text,
+                    option_a,
+                    option_b,
+                    option_c,
+                    option_d,
+                    correct_answer,
+                    explanation,
+                    status
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                subject_id,
+                user["id"],
                 question_text,
                 option_a,
                 option_b,
@@ -1625,32 +1656,71 @@ def tutor_new_question():
                 option_d,
                 correct_answer,
                 explanation,
-                status
+                "pending",
+            ))
+
+            # Get the ID of the newly submitted question
+            question_id = cursor.lastrowid
+
+            conn.commit()
+
+            # ------------------------------------------------
+            # VERIFY QUESTION WAS SAVED
+            # ------------------------------------------------
+
+            saved_question = conn.execute("""
+                SELECT
+                    id,
+                    tutor_id,
+                    subject_id,
+                    status
+                FROM questions
+                WHERE id = ?
+            """, (
+                question_id,
+            )).fetchone()
+
+            if not saved_question:
+
+                conn.close()
+
+                flash(
+                    "Question could not be saved."
+                )
+
+                return redirect(
+                    url_for("tutor_new_question")
+                )
+
+            conn.close()
+
+            flash(
+                "Question submitted successfully. "
+                "It is now pending admin approval."
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
-        """, (
-            subject_id,
-            user["id"],
-            question_text,
-            option_a,
-            option_b,
-            option_c,
-            option_d,
-            correct_answer,
-            explanation,
-        ))
 
-        conn.commit()
+            return redirect(
+                url_for("tutor_dashboard")
+            )
 
-        conn.close()
+        except Exception as e:
 
-        flash(
-            "Question submitted successfully and is now pending admin approval."
-        )
+            conn.rollback()
+            conn.close()
 
-        return redirect(
-            url_for("tutor_dashboard")
-        )
+            print(
+                "TUTOR QUESTION SUBMIT ERROR:",
+                e
+            )
+
+            flash(
+                "Unable to submit question. "
+                "Please try again."
+            )
+
+            return redirect(
+                url_for("tutor_new_question")
+            )
 
     return render_template_string("""
 <!DOCTYPE html>
