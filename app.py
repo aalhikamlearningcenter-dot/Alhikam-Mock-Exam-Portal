@@ -5092,6 +5092,142 @@ def logout():
 
 
 # ============================================================
+# TUTOR REGISTRATION
+# ============================================================
+
+@app.route("/tutor-registration", methods=["GET", "POST"])
+def tutor_registration():
+
+    if request.method == "POST":
+
+        full_name = request.form.get("full_name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        phone = request.form.get("phone", "").strip()
+        subjects = request.form.get("subjects", "").strip()
+        qualification = request.form.get("qualification", "").strip()
+        experience = request.form.get("experience", "").strip()
+        password = request.form.get("password", "")
+
+        if not all([
+            full_name, email, phone, subjects,
+            qualification, experience, password
+        ]):
+            flash("Please complete all fields.")
+            return redirect(url_for("tutor_registration"))
+
+        if len(password) < 6:
+            flash("Password must be at least 6 characters.")
+            return redirect(url_for("tutor_registration"))
+
+        conn = get_db()
+
+        try:
+            existing_user = conn.execute("""
+                SELECT id FROM users WHERE email = ?
+            """, (email,)).fetchone()
+
+            if existing_user:
+                flash("This email already has an account.")
+                return redirect(url_for("tutor_registration"))
+
+            conn.execute("""
+                INSERT INTO tutor_applications (
+                    full_name, email, phone, subjects,
+                    qualification, experience, password_hash,
+                    status
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
+            """, (
+                full_name,
+                email,
+                phone,
+                subjects,
+                qualification,
+                experience,
+                generate_password_hash(password)
+            ))
+
+            conn.commit()
+            flash("Application submitted. Please wait for admin approval.")
+
+        except sqlite3.IntegrityError:
+            flash("An application with this email already exists.")
+
+        finally:
+            conn.close()
+
+        return redirect(url_for("tutor_registration"))
+
+    return render_template_string("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Tutor Registration - Alhikam Learning Center</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background: #101810;
+                color: white;
+                padding: 20px;
+            }
+            .card {
+                max-width: 520px;
+                margin: 20px auto;
+                padding: 24px;
+                background: #1b281e;
+                border-radius: 14px;
+            }
+            h2 { color: #d4af37; text-align: center; }
+            input, textarea, button {
+                box-sizing: border-box;
+                width: 100%;
+                padding: 12px;
+                margin: 8px 0;
+                border-radius: 7px;
+                border: 1px solid #53634f;
+            }
+            button {
+                background: #d4af37;
+                color: #101810;
+                font-weight: bold;
+                border: 0;
+            }
+            a { color: #e6c75a; }
+            .message { color: #f5d76e; }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h2>Tutor Registration</h2>
+            <p>Apply to become a tutor at Alhikam Learning Center.</p>
+
+            {% with messages = get_flashed_messages() %}
+                {% for message in messages %}
+                    <p class="message">{{ message }}</p>
+                {% endfor %}
+            {% endwith %}
+
+            <form method="POST">
+                <input name="full_name" placeholder="Full Name" required>
+                <input type="email" name="email" placeholder="Email Address" required>
+                <input name="phone" placeholder="Phone Number" required>
+                <input name="subjects" placeholder="Subject(s) you teach" required>
+                <input name="qualification" placeholder="Qualification" required>
+                <textarea name="experience" placeholder="Teaching experience" required></textarea>
+                <input type="password" name="password" placeholder="Create Password (minimum 6 characters)" minlength="6" required>
+                <button type="submit">Submit Application</button>
+            </form>
+
+            <p><a href="{{ url_for('login') }}">Back to Login</a></p>
+        </div>
+    </body>
+    </html>
+    """)
+
+
+
+# ============================================================
 # STARTUP
 # ============================================================
 
