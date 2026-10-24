@@ -164,6 +164,27 @@ def init_db():
             )
         """)
 
+
+        # ==========================================
+        # TUTOR APPLICATIONS
+        # ==========================================
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS tutor_applications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                full_name TEXT NOT NULL,
+                email TEXT NOT NULL UNIQUE,
+                phone TEXT NOT NULL,
+                subjects TEXT NOT NULL,
+                qualification TEXT NOT NULL,
+                experience TEXT NOT NULL,
+                password_hash TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+
         subjects = [
             "Biology",
             "Chemistry",
