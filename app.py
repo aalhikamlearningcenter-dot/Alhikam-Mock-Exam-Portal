@@ -5442,6 +5442,8 @@ def review_tutor_application(application_id):
 
     return redirect(url_for("admin_tutor_applications"))
 
+@app.route("/tutor-registration", methods=["GET", "POST"])
+def tutor_registration():
 
 
 
