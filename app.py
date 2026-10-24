@@ -2239,8 +2239,9 @@ No student results are available yet.
     )
 
 
+
 # ============================================================
-# ADMIN DASHBOARD
+# ADMIN DASHBOARD - DARK MODE
 # ============================================================
 
 @app.route("/admin")
@@ -2250,100 +2251,205 @@ def admin_dashboard():
     conn = get_db()
 
     students = conn.execute("""
-        SELECT COUNT(*)
-        FROM users
+        SELECT COUNT(*) FROM users
         WHERE role = 'student'
     """).fetchone()[0]
 
     tutors = conn.execute("""
-        SELECT COUNT(*)
-        FROM users
+        SELECT COUNT(*) FROM users
         WHERE role = 'tutor'
     """).fetchone()[0]
 
     questions = conn.execute("""
-        SELECT COUNT(*)
-        FROM questions
+        SELECT COUNT(*) FROM questions
     """).fetchone()[0]
 
     exams = conn.execute("""
-        SELECT COUNT(*)
-        FROM exams
+        SELECT COUNT(*) FROM exams
     """).fetchone()[0]
 
     pending_questions = conn.execute("""
-        SELECT COUNT(*)
-        FROM questions
+        SELECT COUNT(*) FROM questions
         WHERE status = 'pending'
     """).fetchone()[0]
 
     published_exams = conn.execute("""
-        SELECT COUNT(*)
-        FROM exams
+        SELECT COUNT(*) FROM exams
         WHERE status = 'published'
     """).fetchone()[0]
+
+    try:
+        pending_tutors = conn.execute("""
+            SELECT COUNT(*)
+            FROM tutor_applications
+            WHERE status = 'pending'
+        """).fetchone()[0]
+    except Exception:
+        pending_tutors = 0
 
     conn.close()
 
     return render_template_string("""
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
 
-<title>Admin Dashboard</title>
-
+<meta charset="UTF-8">
 <meta name="viewport"
       content="width=device-width, initial-scale=1">
 
+<title>Alhikam Mock Admin</title>
+
 <style>
 
+* {
+    box-sizing: border-box;
+}
+
 body {
-    font-family: Arial;
-    background: #f4f7f6;
+    font-family: Arial, sans-serif;
+    background: #050b08;
+    color: #e8f0eb;
     margin: 0;
 }
 
-.container {
-    max-width: 1000px;
-    margin: auto;
-    padding: 20px;
+.header {
+    background: linear-gradient(135deg, #062b20, #0b1711);
+    border-bottom: 1px solid #b89235;
+    padding: 24px 20px;
 }
 
-.header {
-    background: #087f5b;
-    color: white;
-    padding: 20px;
+.header h2 {
+    color: #f1ce72;
+    margin: 0 0 8px;
+    font-size: 25px;
+}
+
+.header p {
+    color: #aabbb0;
+    margin: 0;
+    font-size: 14px;
+}
+
+.container {
+    max-width: 1100px;
+    margin: auto;
+    padding: 18px;
+}
+
+.section-title {
+    color: #f1ce72;
+    margin: 25px 0 15px;
 }
 
 .grid {
     display: grid;
     grid-template-columns:
-        repeat(auto-fit, minmax(180px, 1fr));
-    gap: 15px;
+        repeat(auto-fit, minmax(140px, 1fr));
+    gap: 13px;
 }
 
-.card {
-    background: white;
-    padding: 20px;
+.stat-card {
+    background: #101c15;
+    border: 1px solid #263e30;
     border-radius: 12px;
-    margin-top: 20px;
+    padding: 18px 15px;
+    min-width: 0;
+}
+
+.stat-label {
+    color: #b7c7bc;
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0 0 12px;
 }
 
 .stat {
-    font-size: 30px;
+    font-size: 29px;
     font-weight: bold;
-    color: #087f5b;
+    color: #f1ce72;
+    overflow-wrap: anywhere;
+}
+
+.card {
+    background: #0c1710;
+    border: 1px solid #263e30;
+    padding: 20px;
+    border-radius: 14px;
+    margin-top: 20px;
+}
+
+.card h3 {
+    color: #f1ce72;
+    margin-top: 0;
+    margin-bottom: 18px;
 }
 
 .btn {
     display: block;
-    background: #087f5b;
-    color: white;
+    background: #123d2b;
+    border: 1px solid #286044;
+    color: #f1f5f2;
     text-decoration: none;
-    padding: 13px;
-    border-radius: 8px;
-    margin: 10px 0;
+    padding: 14px;
+    border-radius: 9px;
+    margin: 11px 0;
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 1.5;
+    transition: background 0.2s;
+}
+
+.btn:hover {
+    background: #1b573c;
+}
+
+.tutor-applications {
+    background: #30250d;
+    border: 1px solid #b89235;
+    color: #f7d778;
+}
+
+.tutor-applications:hover {
+    background: #493813;
+}
+
+.logout {
+    display: inline-block;
+    color: #f1ce72;
+    text-decoration: none;
+    padding: 10px 0;
+}
+
+.footer {
+    text-align: center;
+    color: #788b7d;
+    font-size: 12px;
+    padding: 20px 0;
+}
+
+@media (max-width: 380px) {
+    .container {
+        padding: 12px;
+    }
+
+    .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 9px;
+    }
+
+    .stat-card {
+        padding: 14px 11px;
+    }
+
+    .stat {
+        font-size: 25px;
+    }
+
+    .card {
+        padding: 15px;
+    }
 }
 
 </style>
@@ -2353,103 +2459,101 @@ body {
 <body>
 
 <div class="header">
-
-<h2>
-Alhikam Mock Admin
-</h2>
-
+    <h2>🎓 Alhikam Mock Admin</h2>
+    <p>ADMINISTRATION DASHBOARD</p>
 </div>
 
 <div class="container">
 
+<h3 class="section-title">📊 Overview</h3>
+
 <div class="grid">
 
-<div class="card">
-<p>Students</p>
-<div class="stat">
-{{ students }}
-</div>
-</div>
+    <div class="stat-card">
+        <p class="stat-label">Students</p>
+        <div class="stat">{{ students }}</div>
+    </div>
 
-<div class="card">
-<p>Tutors</p>
-<div class="stat">
-{{ tutors }}
-</div>
-</div>
+    <div class="stat-card">
+        <p class="stat-label">Registered Tutors</p>
+        <div class="stat">{{ tutors }}</div>
+    </div>
 
-<div class="card">
-<p>Questions</p>
-<div class="stat">
-{{ questions }}
-</div>
-</div>
+    <div class="stat-card">
+        <p class="stat-label">Questions</p>
+        <div class="stat">{{ questions }}</div>
+    </div>
 
-<div class="card">
-<p>Mock Exams</p>
-<div class="stat">
-{{ exams }}
-</div>
-</div>
+    <div class="stat-card">
+        <p class="stat-label">Mock Exams</p>
+        <div class="stat">{{ exams }}</div>
+    </div>
 
-<div class="card">
-<p>Pending Questions</p>
-<div class="stat">
-{{ pending_questions }}
-</div>
-</div>
+    <div class="stat-card">
+        <p class="stat-label">Pending Questions</p>
+        <div class="stat">{{ pending_questions }}</div>
+    </div>
 
-<div class="card">
-<p>Published Exams</p>
-<div class="stat">
-{{ published_exams }}
-</div>
-</div>
+    <div class="stat-card">
+        <p class="stat-label">Published Exams</p>
+        <div class="stat">{{ published_exams }}</div>
+    </div>
+
+    <div class="stat-card">
+        <p class="stat-label">Tutor Applications Awaiting Approval</p>
+        <div class="stat">{{ pending_tutors }}</div>
+    </div>
 
 </div>
-
 
 <div class="card">
 
-<h3>
-Management
-</h3>
+    <h3>⚙️ Management</h3>
 
-<a class="btn"
-   href="{{ url_for('admin_questions') }}">
-📝 Manage Questions
-</a>
+    <a class="btn"
+       href="{{ url_for('admin_questions') }}">
+       📝 Manage Questions
+    </a>
 
-<a class="btn"
-   href="{{ url_for('admin_exams') }}">
-📚 Manage Mock Exams
-</a>
+    <a class="btn"
+       href="{{ url_for('admin_exams') }}">
+       📚 Manage Mock Exams
+    </a>
 
-<a class="btn"
-   href="{{ url_for('admin_tutors') }}">
-👨‍🏫 Manage Tutors
-</a>
+    <a class="btn"
+       href="{{ url_for('admin_tutors') }}">
+       👨‍🏫 Manage Tutors
+    </a>
 
-<a class="btn"
-   href="{{ url_for('admin_results') }}">
-📊 Student Results
-</a>
+    <a class="btn tutor-applications"
+       href="{{ url_for('admin_tutor_applications') }}">
+       📋 Review Tutor Applications
+       — {{ pending_tutors }} Pending
+    </a>
+
+    <a class="btn"
+       href="{{ url_for('admin_results') }}">
+       📊 Student Results
+    </a>
 
 </div>
 
-
 <div class="card">
+    <a class="logout"
+       href="{{ url_for('logout') }}">
+       ↩ Logout
+    </a>
+</div>
 
-<a href="{{ url_for('logout') }}">
-Logout
-</a>
-
+<div class="footer">
+    ALHIKAM MOCK EXAM PORTAL
+    <br>
+    Learn Today. Achieve Tomorrow.
 </div>
 
 </div>
 
 </body>
-
 </html>
 """,
         students=students,
@@ -2458,8 +2562,8 @@ Logout
         exams=exams,
         pending_questions=pending_questions,
         published_exams=published_exams,
-    )
-
+        pending_tutors=pending_tutors,
+   )
 
 
 # ============================================================
