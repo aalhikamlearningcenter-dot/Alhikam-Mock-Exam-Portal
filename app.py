@@ -5228,6 +5228,203 @@ def tutor_registration():
 
 
 # ============================================================
+# ADMIN - TUTOR APPLICATIONS
+# ============================================================
+
+@app.route("/admin/tutor-applications")
+@role_required("admin")
+def admin_tutor_applications():
+
+    conn = get_db()
+
+    applications = conn.execute("""
+        SELECT *
+        FROM tutor_applications
+        ORDER BY
+            CASE WHEN status = 'pending' THEN 0 ELSE 1 END,
+            id DESC
+    """).fetchall()
+
+    conn.close()
+
+    return render_template_string("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Tutor Applications - Alhikam</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background: #101810;
+                color: white;
+                padding: 15px;
+            }
+            .container {
+                max-width: 850px;
+                margin: auto;
+            }
+            .card {
+                background: #1b281e;
+                padding: 18px;
+                margin: 15px 0;
+                border-radius: 12px;
+                overflow-wrap: anywhere;
+            }
+            h2, h3 { color: #d4af37; }
+            .pending { color: #ffd166; }
+            .approved { color: #70e090; }
+            .rejected { color: #ff8585; }
+            button {
+                padding: 11px;
+                margin: 5px 4px 5px 0;
+                border: 0;
+                border-radius: 6px;
+                font-weight: bold;
+            }
+            .approve { background: #16834a; color: white; }
+            .reject { background: #b52b35; color: white; }
+            a { color: #e6c75a; }
+        </style>
+    </head>
+    <body>
+    <div class="container">
+        <h2>Tutor Applications</h2>
+        <p>Review each application before granting tutor access.</p>
+
+        {% for application in applications %}
+        <div class="card">
+            <h3>{{ application["full_name"] }}</h3>
+            <p>Email: {{ application["email"] }}</p>
+            <p>Phone: {{ application["phone"] }}</p>
+            <p>Subjects: {{ application["subjects"] }}</p>
+            <p>Qualification: {{ application["qualification"] }}</p>
+            <p>Experience: {{ application["experience"] }}</p>
+            <p>
+                Status:
+                <strong class="{{ application['status'] }}">
+                    {{ application["status"]|upper }}
+                </strong>
+            </p>
+            <p>Applied: {{ application["created_at"] }}</p>
+
+            {% if application["status"] == "pending" %}
+            <form method="POST"
+                  action="{{ url_for('review_tutor_application',
+                                     application_id=application['id']) }}">
+                <button class="approve" type="submit"
+                        name="decision" value="approve">
+                    Approve Tutor
+                </button>
+                <button class="reject" type="submit"
+                        name="decision" value="reject">
+                    Reject Application
+                </button>
+            </form>
+            {% endif %}
+        </div>
+        {% else %}
+        <p>No tutor applications yet.</p>
+        {% endfor %}
+
+        <p><a href="{{ url_for('admin_dashboard') }}">Back to Admin Dashboard</a></p>
+    </div>
+    </body>
+    </html>
+    """, applications=applications)
+
+
+# ============================================================
+# ADMIN - APPROVE OR REJECT TUTOR
+# ============================================================
+
+@app.route(
+    "/admin/tutor-applications/<int:application_id>/review",
+    methods=["POST"]
+)
+@role_required("admin")
+def review_tutor_application(application_id):
+
+    decision = request.form.get("decision", "")
+
+    if decision not in {"approve", "reject"}:
+        return "Invalid decision.", 400
+
+    conn = get_db()
+
+    try:
+        application = conn.execute("""
+            SELECT *
+            FROM tutor_applications
+            WHERE id = ?
+              AND status = 'pending'
+        """, (application_id,)).fetchone()
+
+        if not application:
+            flash("Application not found or already reviewed.")
+            return redirect(url_for("admin_tutor_applications"))
+
+        if decision == "approve":
+
+            existing_user = conn.execute("""
+                SELECT id, role
+                FROM users
+                WHERE email = ?
+            """, (application["email"],)).fetchone()
+
+            if existing_user:
+                flash(
+                    "This email already belongs to an account. "
+                    "No account role was changed."
+                )
+                return redirect(url_for("admin_tutor_applications"))
+
+            conn.execute("""
+                INSERT INTO users (
+                    full_name,
+                    email,
+                    password_hash,
+                    role
+                )
+                VALUES (?, ?, ?, 'tutor')
+            """, (
+                application["full_name"],
+                application["email"],
+                application["password_hash"],
+            ))
+
+            conn.execute("""
+                UPDATE tutor_applications
+                SET status = 'approved'
+                WHERE id = ?
+            """, (application_id,))
+
+            conn.commit()
+            flash("Tutor approved. The tutor can now log in.")
+
+        else:
+            conn.execute("""
+                UPDATE tutor_applications
+                SET status = 'rejected'
+                WHERE id = ?
+            """, (application_id,))
+
+            conn.commit()
+            flash("Tutor application rejected.")
+
+    except sqlite3.IntegrityError:
+        conn.rollback()
+        flash("Could not process this application. Please check the account.")
+
+    finally:
+        conn.close()
+
+    return redirect(url_for("admin_tutor_applications"))
+
+
+
+
+# ============================================================
 # STARTUP
 # ============================================================
 
