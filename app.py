@@ -836,6 +836,7 @@ Register
 """)
 
 
+
 # ============================================================
 # DASHBOARD
 # ============================================================
@@ -847,16 +848,10 @@ def dashboard():
     user = current_user()
 
     if user["role"] == "admin":
-
-        return redirect(
-            url_for("admin_dashboard")
-        )
+        return redirect(url_for("admin_dashboard"))
 
     if user["role"] == "tutor":
-
-        return redirect(
-            url_for("tutor_dashboard")
-        )
+        return redirect(url_for("tutor_dashboard"))
 
     return render_template_string("""
 <!DOCTYPE html>
@@ -864,7 +859,7 @@ def dashboard():
 
 <head>
 
-<title>Student Dashboard</title>
+<title>Student Dashboard - ALHIKAM</title>
 
 <meta name="viewport"
       content="width=device-width, initial-scale=1">
@@ -872,14 +867,15 @@ def dashboard():
 <style>
 
 body {
-    font-family: Arial;
-    background: #f4f7f6;
+    font-family: Arial, sans-serif;
+    background: #071510;
+    color: #f1f5f3;
     margin: 0;
 }
 
 .header {
-    background: #087f5b;
-    color: white;
+    background: #064e3b;
+    color: #ffffff;
     padding: 20px;
 }
 
@@ -890,7 +886,8 @@ body {
 }
 
 .card {
-    background: white;
+    background: #10251c;
+    border: 1px solid #24543e;
     padding: 25px;
     margin: 15px 0;
     border-radius: 12px;
@@ -898,11 +895,25 @@ body {
 
 .btn {
     display: inline-block;
-    padding: 10px 18px;
+    padding: 12px 18px;
+    margin: 5px 0;
     background: #087f5b;
     color: white;
     text-decoration: none;
     border-radius: 7px;
+}
+
+.btn:hover {
+    background: #0a9b6d;
+}
+
+.tutor-btn {
+    background: #b8860b;
+    color: white;
+}
+
+.logout {
+    color: #f5d77b;
 }
 
 </style>
@@ -917,15 +928,15 @@ body {
 Welcome, {{ user["full_name"] }}
 </h2>
 
+<p>ALHIKAM MOCK EXAM PORTAL</p>
+
 </div>
 
 <div class="container">
 
 <div class="card">
 
-<h3>
-Student Dashboard
-</h3>
+<h3>Student Dashboard</h3>
 
 <p>
 Your Mock Exam Portal is ready.
@@ -940,9 +951,7 @@ Available Mock Exams
 
 <div class="card">
 
-<h3>
-My Results
-</h3>
+<h3>My Results</h3>
 
 <a class="btn"
    href="{{ url_for('my_results') }}">
@@ -953,7 +962,25 @@ View Results
 
 <div class="card">
 
-<a href="{{ url_for('logout') }}">
+<h3>Become a Tutor</h3>
+
+<p>
+Are you qualified to teach? Submit your tutor
+application for admin review. You can become a
+tutor after your application is approved.
+</p>
+
+<a class="btn tutor-btn"
+   href="{{ url_for('tutor_registration') }}">
+Register as a Tutor
+</a>
+
+</div>
+
+<div class="card">
+
+<a class="logout"
+   href="{{ url_for('logout') }}">
 Logout
 </a>
 
@@ -964,9 +991,7 @@ Logout
 </body>
 
 </html>
-""",
-        user=user,
-    )
+""", user=user)
 
 
 # ============================================================
