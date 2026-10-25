@@ -1270,11 +1270,13 @@ def available_exams():
 <meta name="viewport"
       content="width=device-width, initial-scale=1">
 
-<style>
 
+<style>
 body {
-    font-family: Arial;
-    background: #f4f7f6;
+    font-family: Arial, sans-serif;
+    background: #071510;
+    color: #f1f5f3;
+    margin: 0;
 }
 
 .container {
@@ -1284,22 +1286,41 @@ body {
 }
 
 .exam {
-    background: white;
-    padding: 20px;
+    background: #10251c;
+    border: 1px solid #24543e;
+    color: #f1f5f3;
+    padding: 22px;
     margin: 15px 0;
     border-radius: 12px;
+}
+
+h2, h3 {
+    color: #f5d77b;
+}
+
+p {
+    color: #d0ddd5;
 }
 
 .btn {
     background: #087f5b;
     color: white;
-    padding: 10px 18px;
+    padding: 11px 18px;
     text-decoration: none;
     border-radius: 7px;
     display: inline-block;
 }
 
+.btn:hover {
+    background: #0a9b6d;
+}
+
+a:not(.btn) {
+    color: #f5d77b;
+}
+
 </style>
+
 
 </head>
 
