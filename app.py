@@ -6267,6 +6267,37 @@ def tutor_registration():
     """, settings=settings)
 
 
+# ============================================================
+# GLOBAL TUTOR SETTINGS
+# ALHIKAM LEARNING CENTER
+# ============================================================
+
+def ensure_tutor_settings(conn):
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS tutor_settings (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            video_salary INTEGER NOT NULL DEFAULT 15000,
+            voice_salary INTEGER NOT NULL DEFAULT 10000,
+            video_data_gb INTEGER NOT NULL DEFAULT 10,
+            voice_data_gb INTEGER NOT NULL DEFAULT 5
+        )
+    """)
+
+    conn.execute("""
+        INSERT OR IGNORE INTO tutor_settings (
+            id,
+            video_salary,
+            voice_salary,
+            video_data_gb,
+            voice_data_gb
+        )
+        VALUES (1, 15000, 10000, 10, 5)
+    """)
+
+    conn.commit()
+
+
+
   
    
 # ============================================================
