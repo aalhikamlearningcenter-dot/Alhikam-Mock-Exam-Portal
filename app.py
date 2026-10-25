@@ -5704,10 +5704,22 @@ def tutor_registration():
 
         return redirect(url_for("tutor_registration"))
 
-    
+  
     # ========================================================
     # TUTOR REGISTRATION PAGE
     # ========================================================
+
+    conn = get_db()
+    try:
+        ensure_tutor_settings(conn)
+
+        settings = conn.execute("""
+            SELECT *
+            FROM tutor_settings
+            WHERE id = 1
+        """).fetchone()
+    finally:
+        conn.close()
 
     return render_template_string("""
     <!DOCTYPE html>
@@ -5990,34 +6002,36 @@ def tutor_registration():
                     <div class="salary-card">
                         <strong>Video Tutor</strong>
                         <p class="salary-amount">
-                            ₦15,000 per month
+                            ₦{{ "{:,}".format(settings["video_salary"]) }}
+                            per month
                         </p>
                         <p class="note">
-                            Proposed starting monthly salary.
+                            Monthly salary set by the Admin.
+                            Final terms will be confirmed in writing.
                         </p>
                     </div>
 
                     <div class="salary-card">
                         <strong>Voice-Chat Tutor</strong>
                         <p class="salary-amount">
-                            ₦10,000 per month
+                            ₦{{ "{:,}".format(settings["voice_salary"]) }}
+                            per month
                         </p>
                         <p class="note">
-                            Proposed starting monthly salary.
+                            Monthly salary set by the Admin.
+                            Final terms will be confirmed in writing.
                         </p>
                     </div>
 
                     <ul>
                         <li>
-                            Final salary depends on the assigned
-                            teaching method, qualification,
-                            experience, workload and written
-                            employment agreement.
+                            The applicable salary depends on
+                            the assigned teaching method and
+                            the written employment agreement.
                         </li>
                         <li>
-                            Any agreed salary change must be
-                            communicated in advance and confirmed
-                            in writing.
+                            Any salary change must be communicated
+                            in advance and confirmed in writing.
                         </li>
                     </ul>
 
@@ -6026,21 +6040,27 @@ def tutor_registration():
                     <ul>
                         <li>
                             Video tutors may receive data support
-                            of up to <strong>10GB per month</strong>.
+                            of up to
+                            <strong>
+                                {{ settings["video_data_gb"] }}GB per month
+                            </strong>.
                         </li>
                         <li>
                             Voice-chat tutors may receive data
-                            support of up to <strong>5GB per month</strong>.
+                            support of up to
+                            <strong>
+                                {{ settings["voice_data_gb"] }}GB per month
+                            </strong>.
                         </li>
                         <li>
-                            These are proposed maximum allowances,
-                            not a guarantee that the full amount
-                            will be provided every month.
+                            These are maximum allowances set
+                            by the Admin, not a guarantee that
+                            the full amount will be provided monthly.
                         </li>
                         <li>
-                            Eligibility, amount and delivery
-                            arrangements will be confirmed in
-                            the written employment agreement.
+                            Eligibility and delivery arrangements
+                            will be confirmed in the written
+                            employment agreement.
                         </li>
                     </ul>
 
@@ -6203,11 +6223,11 @@ def tutor_registration():
                     </ul>
 
                     <p class="note">
-                        Salary and data figures shown here are
-                        proposed starting terms. Final agreed
-                        terms will be confirmed in writing and
-                        will be subject to applicable
-                        employment laws.
+                        The salary and data figures displayed
+                        above reflect the current Admin settings.
+                        Final employment terms will be confirmed
+                        in writing and will be subject to
+                        applicable employment laws.
                     </p>
 
                 </div>
@@ -6244,9 +6264,11 @@ def tutor_registration():
         </div>
     </body>
     </html>
-    """)
+    """, settings=settings)
 
 
+  
+   
 
 # ============================================================
 # ADMIN - TUTOR APPLICATIONS
