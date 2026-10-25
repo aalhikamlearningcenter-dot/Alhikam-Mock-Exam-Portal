@@ -6648,11 +6648,6 @@ def update_global_tutor_settings():
 
 
 # ============================================================
-# KEEP YOUR EXISTING review_tutor_application ROUTE BELOW
-# ============================================================
-
-
-# ============================================================
 # ADMIN - APPROVE OR REJECT TUTOR
 # Keep your existing review_tutor_application route below
 # ============================================================
