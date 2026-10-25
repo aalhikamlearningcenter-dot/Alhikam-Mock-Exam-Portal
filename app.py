@@ -1436,19 +1436,35 @@ def my_results():
 <meta name="viewport"
       content="width=device-width, initial-scale=1">
 
-<style>
 
+<style>
 body {
-    font-family: Arial;
-    background: #f4f7f6;
+    font-family: Arial, sans-serif;
+    background: #071510;
+    color: #f1f5f3;
     padding: 20px;
+    margin: 0;
 }
 
 .result {
-    background: white;
-    padding: 20px;
+    background: #10251c;
+    border: 1px solid #24543e;
+    padding: 22px;
     margin: 15px 0;
     border-radius: 12px;
+}
+
+h2, h3 {
+    color: #f5d77b;
+}
+
+p {
+    color: #d0ddd5;
+    line-height: 1.6;
+}
+
+a {
+    color: #f5d77b;
 }
 
 </style>
