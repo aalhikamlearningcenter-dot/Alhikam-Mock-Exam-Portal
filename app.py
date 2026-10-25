@@ -5412,6 +5412,7 @@ def tutor_registration():
 
         return redirect(url_for("tutor_registration"))
 
+    
     # ========================================================
     # TUTOR REGISTRATION PAGE
     # ========================================================
@@ -5549,6 +5550,20 @@ def tutor_registration():
                 text-align: center;
                 margin-top: 20px;
             }
+
+            .salary-card {
+                background: #1b281e;
+                border: 1px solid #53634f;
+                border-radius: 8px;
+                padding: 12px;
+                margin: 12px 0;
+            }
+
+            .salary-amount {
+                color: #f5d76e;
+                font-size: 20px;
+                font-weight: bold;
+            }
         </style>
     </head>
 
@@ -5667,69 +5682,143 @@ def tutor_registration():
 
                 <div class="rules">
 
-                    <h3>Tutor Responsibilities & Rules</h3>
+                    <h3>
+                        Tutor Responsibilities, Salary
+                        & Employment Rules
+                    </h3>
 
                     <p>
-                        Please read these rules carefully
-                        before submitting your application.
+                        Please read the salary, data support,
+                        teaching duties and employment rules
+                        carefully before applying.
                     </p>
 
-                    <h4>1. Monthly Teaching Schedule</h4>
+                    <h4>1. Monthly Salary</h4>
+
+                    <div class="salary-card">
+                        <strong>Video Tutor</strong>
+                        <p class="salary-amount">
+                            ₦15,000 per month
+                        </p>
+                        <p class="note">
+                            Proposed starting monthly salary.
+                        </p>
+                    </div>
+
+                    <div class="salary-card">
+                        <strong>Voice-Chat Tutor</strong>
+                        <p class="salary-amount">
+                            ₦10,000 per month
+                        </p>
+                        <p class="note">
+                            Proposed starting monthly salary.
+                        </p>
+                    </div>
+
+                    <ul>
+                        <li>
+                            Final salary depends on the assigned
+                            teaching method, qualification,
+                            experience, workload and written
+                            employment agreement.
+                        </li>
+                        <li>
+                            Any agreed salary change must be
+                            communicated in advance and confirmed
+                            in writing.
+                        </li>
+                    </ul>
+
+                    <h4>2. Monthly Data Support</h4>
+
+                    <ul>
+                        <li>
+                            Video tutors may receive data support
+                            of up to <strong>10GB per month</strong>.
+                        </li>
+                        <li>
+                            Voice-chat tutors may receive data
+                            support of up to <strong>5GB per month</strong>.
+                        </li>
+                        <li>
+                            These are proposed maximum allowances,
+                            not a guarantee that the full amount
+                            will be provided every month.
+                        </li>
+                        <li>
+                            Eligibility, amount and delivery
+                            arrangements will be confirmed in
+                            the written employment agreement.
+                        </li>
+                    </ul>
+
+                    <h4>3. Monthly Teaching Schedule</h4>
+
                     <ul>
                         <li>
                             Tutors are expected to conduct
-                            8–10 classes per month according
-                            to the official timetable.
+                            8–10 classes per month.
+                        </li>
+                        <li>
+                            The normal workload is approximately
+                            2–4 teaching hours per week, subject
+                            to the agreed timetable.
                         </li>
                         <li>
                             The Admin or Academic Coordinator
-                            assigns class dates, times and subjects.
-                        </li>
-                        <li>
-                            The normal teaching workload is
-                            2–4 hours per week, as agreed in
-                            the employment terms.
+                            assigns subjects, class dates,
+                            times and teaching methods.
                         </li>
                         <li>
                             Tutors must prepare lessons and
-                            attend all assigned classes on time.
+                            attend assigned classes on time.
                         </li>
                     </ul>
 
-                    <h4>2. Absence and Substitute Tutors</h4>
+                    <h4>4. Teaching Methods</h4>
+
                     <ul>
                         <li>
-                            Tutors must notify the Academic
-                            Coordinator as early as possible
-                            if they cannot attend a scheduled class.
+                            Video tutors should provide clear
+                            explanations, readable teaching
+                            materials and suitable audio and
+                            video quality.
                         </li>
                         <li>
-                            If a tutor is absent without
-                            authorization, a substitute tutor
-                            may be assigned to conduct the class.
+                            Voice-chat tutors should explain
+                            topics clearly, interact with
+                            students and allow time for questions.
                         </li>
                         <li>
-                            Payment for the substitute and
-                            any applicable salary adjustment
-                            must be documented and handled
-                            according to the written employment
-                            agreement and applicable law.
+                            Tutors must use the teaching method
+                            assigned or approved by the
+                            Academic Coordinator.
                         </li>
                     </ul>
 
-                    <h4>3. Three Unreported Absences</h4>
+                    <h4>5. Syllabus and Past Questions</h4>
+
                     <ul>
                         <li>
-                            Missing three scheduled classes
-                            without notification or an
-                            acceptable explanation may lead
-                            to replacement or termination
-                            after review and an opportunity
-                            for the tutor to explain.
+                            Lessons must follow the relevant
+                            official JAMB, WAEC or NECO syllabus
+                            for the assigned subject.
+                        </li>
+                        <li>
+                            Tutors should use relevant past
+                            questions, practice questions and
+                            clear explanations to help students
+                            prepare for examinations.
+                        </li>
+                        <li>
+                            Tutors must provide accurate answers
+                            and explanations and must not
+                            knowingly teach incorrect information.
                         </li>
                     </ul>
 
-                    <h4>4. Weekly Mock Questions</h4>
+                    <h4>6. Weekly Mock Questions</h4>
+
                     <ul>
                         <li>
                             Every tutor must prepare weekly
@@ -5737,7 +5826,7 @@ def tutor_registration():
                             subject.
                         </li>
                         <li>
-                            Questions must include accurate
+                            Questions should include correct
                             answers and explanations.
                         </li>
                         <li>
@@ -5746,61 +5835,86 @@ def tutor_registration():
                         </li>
                     </ul>
 
-                    <h4>5. Monthly Salary</h4>
+                    <h4>7. Absence and Substitute Tutors</h4>
+
                     <ul>
                         <li>
-                            Tutors receive a monthly salary
-                            according to their written
-                            employment agreement.
+                            Tutors must notify the Academic
+                            Coordinator as early as possible
+                            if they cannot attend a scheduled class.
                         </li>
                         <li>
-                            Salary amount, payment date,
-                            workload and applicable allowances
-                            will be stated in the agreement.
+                            A substitute tutor may be assigned
+                            when necessary.
                         </li>
                         <li>
-                            Bank details must be accurate.
-                            Any change to payment details
-                            must be reported through an
-                            authorized administrative process.
+                            Any related payment or salary
+                            adjustment must be documented and
+                            handled according to the written
+                            employment agreement and applicable law.
                         </li>
                     </ul>
 
-                    <h4>6. Professional Conduct</h4>
+                    <h4>8. Unreported Absences</h4>
+
+                    <ul>
+                        <li>
+                            Three classes missed without
+                            notification or an acceptable
+                            explanation may lead to an
+                            administrative review.
+                        </li>
+                        <li>
+                            Replacement or termination may
+                            follow after review and after the
+                            tutor has an opportunity to explain.
+                        </li>
+                    </ul>
+
+                    <h4>9. Professional Conduct and Reports</h4>
+
                     <ul>
                         <li>
                             Tutors must respect students,
-                            protect confidential information,
-                            follow the approved timetable
-                            and submit lesson reports.
+                            follow the approved timetable and
+                            submit lesson reports when requested.
                         </li>
                         <li>
-                            Tutors must not share student
-                            information or private account
-                            details with unauthorized persons.
+                            Student information, passwords and
+                            private account details must be
+                            kept confidential.
+                        </li>
+                        <li>
+                            Tutors must not share confidential
+                            information with unauthorized persons.
                         </li>
                     </ul>
 
-                    <h4>7. Application and Approval</h4>
+                    <h4>10. Application and Approval</h4>
+
                     <ul>
                         <li>
-                            Submitting an application does
-                            not automatically grant tutor access.
+                            Submitting this form does not
+                            automatically make the applicant
+                            an approved tutor.
                         </li>
                         <li>
                             All applications are subject to
                             Admin review and approval.
                         </li>
                         <li>
-                            Approved applicants must accept
-                            their employment terms before
-                            beginning work.
+                            Final salary, data support, workload,
+                            payment arrangements and other
+                            employment terms must be confirmed
+                            in writing before work begins.
                         </li>
                     </ul>
 
                     <p class="note">
-                        These rules are subject to the written
-                        employment agreement and applicable
+                        Salary and data figures shown here are
+                        proposed starting terms. Final agreed
+                        terms will be confirmed in writing and
+                        will be subject to applicable
                         employment laws.
                     </p>
 
@@ -5816,9 +5930,9 @@ def tutor_registration():
 
                     <span>
                         I have read and understood the Tutor
-                        Responsibilities & Employment Rules
-                        of Alhikam Learning Center, and I
-                        agree to comply with them if my
+                        Responsibilities, Salary & Employment
+                        Rules of Alhikam Learning Center, and
+                        I agree to comply with them if my
                         application is approved.
                     </span>
                 </label>
