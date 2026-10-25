@@ -925,45 +925,96 @@ def login():
 <meta name="viewport"
       content="width=device-width, initial-scale=1">
 
+
 <style>
+* {
+    box-sizing: border-box;
+}
 
 body {
-    font-family: Arial;
-    background: #f4f7f6;
+    font-family: Arial, sans-serif;
+    background: #071510;
+    color: #f1f5f3;
+    margin: 0;
+    min-height: 100vh;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .box {
+    width: 100%;
     max-width: 450px;
-    margin: 60px auto;
-    background: white;
+    margin: auto;
+    background: #10251c;
+    border: 1px solid #24543e;
     padding: 30px;
-    border-radius: 15px;
+    border-radius: 16px;
+    box-shadow: 0 12px 35px rgba(0,0,0,.35);
+}
+
+h2 {
+    color: #f5d77b;
+    text-align: center;
+    margin-bottom: 25px;
 }
 
 input {
     width: 100%;
-    padding: 12px;
-    margin: 8px 0;
-    box-sizing: border-box;
+    padding: 13px;
+    margin: 8px 0 15px;
+    background: #071510;
+    color: white;
+    border: 1px solid #38634d;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+input::placeholder {
+    color: #a8b9ae;
 }
 
 button {
     width: 100%;
-    padding: 13px;
+    padding: 14px;
     background: #087f5b;
     color: white;
     border: 0;
-    border-radius: 7px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #0a9b6d;
+}
+
+a {
+    color: #f5d77b;
+}
+
+p {
+    color: #d0ddd5;
+    text-align: center;
 }
 
 .flash {
-    background: #fff3cd;
+    background: #382d13;
+    color: #ffe7a0;
+    border: 1px solid #8c6c1c;
     padding: 12px;
-    border-radius: 7px;
+    border-radius: 8px;
     margin-bottom: 15px;
 }
 
+@media (max-width: 480px) {
+    .box {
+        padding: 23px 18px;
+    }
+}
 </style>
+
 
 </head>
 
