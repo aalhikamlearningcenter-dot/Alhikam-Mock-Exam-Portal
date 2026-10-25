@@ -658,57 +658,130 @@ def register():
 
             conn.close()
 
+    
     return render_template_string("""
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
 
-<title>Student Registration</title>
+<title>Student Registration - Alhikam Learning Center</title>
 
 <meta name="viewport"
       content="width=device-width, initial-scale=1">
 
+<meta name="theme-color" content="#071510">
+
 <style>
 
+* {
+    box-sizing: border-box;
+}
+
 body {
-    font-family: Arial;
-    background: #f4f7f6;
+    font-family: Arial, sans-serif;
+    background: #071510;
+    color: #f1f5f3;
+    margin: 0;
+    min-height: 100vh;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .box {
+    width: 100%;
     max-width: 450px;
-    margin: 50px auto;
-    background: white;
+    margin: 20px auto;
+    background: #10251c;
+    border: 1px solid #24543e;
     padding: 30px;
-    border-radius: 15px;
+    border-radius: 16px;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
+}
+
+h2 {
+    color: #f5d77b;
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 25px;
 }
 
 input {
     width: 100%;
-    padding: 12px;
-    margin: 8px 0;
+    padding: 13px;
+    margin: 9px 0 15px;
     box-sizing: border-box;
+    background: #071510;
+    color: #ffffff;
+    border: 1px solid #38634d;
+    border-radius: 8px;
+    font-size: 16px;
+    outline: none;
+}
+
+input:focus {
+    border-color: #55d6a3;
+    box-shadow: 0 0 0 2px rgba(85, 214, 163, 0.12);
+}
+
+input::placeholder {
+    color: #a8b9ae;
 }
 
 button {
     width: 100%;
-    padding: 13px;
+    padding: 14px;
     background: #087f5b;
-    color: white;
-    border: 0;
-    border-radius: 7px;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 5px;
+}
+
+button:hover {
+    background: #0a9b6d;
 }
 
 a {
-    color: #087f5b;
+    color: #f5d77b;
+    text-decoration: none;
+}
+
+a:hover {
+    color: #ffffff;
+    text-decoration: underline;
+}
+
+p {
+    color: #d0ddd5;
+    line-height: 1.6;
+    text-align: center;
+    margin-top: 22px;
 }
 
 .flash {
-    background: #fff3cd;
+    background: #382d13;
+    color: #ffe7a0;
+    border: 1px solid #8c6c1c;
     padding: 12px;
-    border-radius: 7px;
+    border-radius: 8px;
     margin-bottom: 15px;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 14px;
+    }
+
+    .box {
+        padding: 23px 18px;
+    }
 }
 
 </style>
@@ -720,6 +793,8 @@ a {
 <div class="box">
 
 <h2>
+Alhikam Learning Center
+<br>
 Student Registration
 </h2>
 
@@ -741,6 +816,7 @@ Student Registration
     type="text"
     name="full_name"
     placeholder="Full Name"
+    autocomplete="name"
     required
 >
 
@@ -748,13 +824,16 @@ Student Registration
     type="email"
     name="email"
     placeholder="Email"
+    autocomplete="email"
     required
 >
 
 <input
     type="password"
     name="password"
-    placeholder="Password"
+    placeholder="Password (at least 6 characters)"
+    autocomplete="new-password"
+    minlength="6"
     required
 >
 
@@ -765,13 +844,11 @@ Create Account
 </form>
 
 <p>
-
 Already have an account?
-
+<br>
 <a href="{{ url_for('login') }}">
-Login
+Login Here
 </a>
-
 </p>
 
 </div>
@@ -780,6 +857,7 @@ Login
 
 </html>
 """)
+
 
 
 # ============================================================
