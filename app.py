@@ -5965,6 +5965,29 @@ def admin_tutor_applications():
 
     conn = get_db()
 
+
+    # Add tutor salary fields safely if missing
+    columns = {
+        row["name"]
+        for row in conn.execute(
+            "PRAGMA table_info(tutor_applications)"
+        ).fetchall()
+    }
+
+    if "salary_amount" not in columns:
+        conn.execute("""
+            ALTER TABLE tutor_applications
+            ADD COLUMN salary_amount INTEGER DEFAULT 0
+        """)
+
+    if "data_allowance_gb" not in columns:
+        conn.execute("""
+            ALTER TABLE tutor_applications
+            ADD COLUMN data_allowance_gb INTEGER DEFAULT 0
+        """)
+
+    conn.commit()
+
     applications = conn.execute("""
         SELECT *
         FROM tutor_applications
