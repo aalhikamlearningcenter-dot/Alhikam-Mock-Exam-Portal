@@ -6269,9 +6269,8 @@ def tutor_registration():
 
   
    
-
 # ============================================================
-# ADMIN - TUTOR APPLICATIONS
+# ADMIN - TUTOR APPLICATIONS (GLOBAL SETTINGS)
 # ============================================================
 
 @app.route("/admin/tutor-applications")
@@ -6281,7 +6280,10 @@ def admin_tutor_applications():
     conn = get_db()
 
     try:
-        # Read existing database columns
+        # Create global settings safely
+        ensure_tutor_settings(conn)
+
+        # Preserve existing application data and add missing columns
         columns = {
             row[1]
             for row in conn.execute(
@@ -6289,40 +6291,23 @@ def admin_tutor_applications():
             ).fetchall()
         }
 
-        # Add missing bank fields safely
-        if "bank_name" not in columns:
-            conn.execute("""
-                ALTER TABLE tutor_applications
-                ADD COLUMN bank_name TEXT DEFAULT ''
-            """)
+        bank_columns = {
+            "bank_name": "TEXT DEFAULT ''",
+            "account_name": "TEXT DEFAULT ''",
+            "account_number": "TEXT DEFAULT ''",
+            "salary_amount": "INTEGER DEFAULT 0",
+            "data_allowance_gb": "INTEGER DEFAULT 0"
+        }
 
-        if "account_name" not in columns:
-            conn.execute("""
-                ALTER TABLE tutor_applications
-                ADD COLUMN account_name TEXT DEFAULT ''
-            """)
-
-        if "account_number" not in columns:
-            conn.execute("""
-                ALTER TABLE tutor_applications
-                ADD COLUMN account_number TEXT DEFAULT ''
-            """)
-
-        if "salary_amount" not in columns:
-            conn.execute("""
-                ALTER TABLE tutor_applications
-                ADD COLUMN salary_amount INTEGER DEFAULT 0
-            """)
-
-        if "data_allowance_gb" not in columns:
-            conn.execute("""
-                ALTER TABLE tutor_applications
-                ADD COLUMN data_allowance_gb INTEGER DEFAULT 0
-            """)
+        for column, definition in bank_columns.items():
+            if column not in columns:
+                conn.execute(
+                    f"ALTER TABLE tutor_applications "
+                    f"ADD COLUMN {column} {definition}"
+                )
 
         conn.commit()
 
-        # Get applications after ensuring columns exist
         applications = conn.execute("""
             SELECT *
             FROM tutor_applications
@@ -6334,6 +6319,12 @@ def admin_tutor_applications():
                 END,
                 id DESC
         """).fetchall()
+
+        settings = conn.execute("""
+            SELECT *
+            FROM tutor_settings
+            WHERE id = 1
+        """).fetchone()
 
     finally:
         conn.close()
@@ -6349,9 +6340,7 @@ def admin_tutor_applications():
         <title>Tutor Applications - Alhikam Learning Center</title>
 
         <style>
-            * {
-                box-sizing: border-box;
-            }
+            * { box-sizing: border-box; }
 
             body {
                 margin: 0;
@@ -6359,6 +6348,7 @@ def admin_tutor_applications():
                 font-family: Arial, sans-serif;
                 background: #101810;
                 color: #f5f5f5;
+                line-height: 1.6;
             }
 
             .container {
@@ -6375,10 +6365,6 @@ def admin_tutor_applications():
                 overflow-wrap: anywhere;
             }
 
-            h2, h3 {
-                color: #d4af37;
-            }
-
             .section {
                 background: #121c14;
                 padding: 14px;
@@ -6387,17 +6373,7 @@ def admin_tutor_applications():
                 border: 1px solid #354936;
             }
 
-            .pending {
-                color: #ffd166;
-            }
-
-            .approved {
-                color: #70e090;
-            }
-
-            .rejected {
-                color: #ff8585;
-            }
+            h2, h3 { color: #d4af37; }
 
             label {
                 display: block;
@@ -6444,13 +6420,12 @@ def admin_tutor_applications():
                 color: white;
             }
 
-            a {
-                color: #e6c75a;
-            }
+            .pending { color: #ffd166; }
+            .approved { color: #70e090; }
+            .rejected { color: #ff8585; }
+            .muted { color: #b8c4b8; }
 
-            .muted {
-                color: #b8c4b8;
-            }
+            a { color: #e6c75a; }
         </style>
     </head>
 
@@ -6461,9 +6436,65 @@ def admin_tutor_applications():
         <h3>Tutor Applications Dashboard</h3>
 
         <p class="muted">
-            Review tutor applications, bank details, monthly salary
-            and data support before approving tutors.
+            Change the general salary and data settings
+            and review tutor applications below.
         </p>
+
+        <!-- GLOBAL SALARY AND DATA SETTINGS -->
+        <div class="card">
+            <h3>Global Salary & Data Settings</h3>
+
+            <p class="muted">
+                These values control the salary and data figures
+                displayed on the tutor registration page.
+            </p>
+
+            <form method="POST"
+                  action="{{ url_for('update_global_tutor_settings') }}">
+
+                <label>Video Tutor Monthly Salary (₦)</label>
+                <input type="number"
+                       name="video_salary"
+                       min="0"
+                       max="10000000"
+                       step="1"
+                       value="{{ settings['video_salary'] }}"
+                       required>
+
+                <label>Voice-Chat Tutor Monthly Salary (₦)</label>
+                <input type="number"
+                       name="voice_salary"
+                       min="0"
+                       max="10000000"
+                       step="1"
+                       value="{{ settings['voice_salary'] }}"
+                       required>
+
+                <label>Video Tutor Monthly Data (GB)</label>
+                <input type="number"
+                       name="video_data_gb"
+                       min="0"
+                       max="1000"
+                       step="1"
+                       value="{{ settings['video_data_gb'] }}"
+                       required>
+
+                <label>Voice-Chat Tutor Monthly Data (GB)</label>
+                <input type="number"
+                       name="voice_data_gb"
+                       min="0"
+                       max="1000"
+                       step="1"
+                       value="{{ settings['voice_data_gb'] }}"
+                       required>
+
+                <button class="save" type="submit">
+                    Save Global Settings
+                </button>
+            </form>
+        </div>
+
+        <h3>Submitted Tutor Applications</h3>
 
         {% for application in applications %}
         <div class="card">
@@ -6484,7 +6515,6 @@ def admin_tutor_applications():
                 </strong>
             </p>
 
-            <!-- BANK DETAILS -->
             <div class="section">
                 <h3>Bank Account Details</h3>
 
@@ -6504,59 +6534,6 @@ def admin_tutor_applications():
                 </p>
             </div>
 
-            <!-- SALARY SETTINGS -->
-            <div class="section">
-                <h3>Manage Tutor Salary</h3>
-
-                <p>
-                    Current Monthly Salary:
-                    <strong>
-                        ₦{{ "{:,}".format(
-                            application["salary_amount"] or 0
-                        ) }}
-                    </strong>
-                </p>
-
-                <p>
-                    Current Data Support:
-                    <strong>
-                        {{ application["data_allowance_gb"] or 0 }} GB
-                    </strong>
-                </p>
-
-                <form method="POST"
-                      action="{{ url_for(
-                          'update_tutor_salary',
-                          application_id=application['id']
-                      ) }}">
-
-                    <label>Monthly Salary (₦)</label>
-                    <input
-                        type="number"
-                        name="salary_amount"
-                        min="0"
-                        max="10000000"
-                        step="1"
-                        value="{{ application['salary_amount'] or 0 }}"
-                        required>
-
-                    <label>Monthly Data Support (GB)</label>
-                    <input
-                        type="number"
-                        name="data_allowance_gb"
-                        min="0"
-                        max="1000"
-                        step="1"
-                        value="{{ application['data_allowance_gb'] or 0 }}"
-                        required>
-
-                    <button class="save" type="submit">
-                        Save Salary & Data Support
-                    </button>
-                </form>
-            </div>
-
-            <!-- APPROVE OR REJECT -->
             {% if application["status"] == "pending" %}
             <div class="section">
                 <h3>Application Decision</h3>
@@ -6585,7 +6562,6 @@ def admin_tutor_applications():
             {% endif %}
 
         </div>
-
         {% else %}
             <p>No tutor applications yet.</p>
         {% endfor %}
@@ -6599,36 +6575,37 @@ def admin_tutor_applications():
     </div>
     </body>
     </html>
-    """, applications=applications)
+    """, applications=applications, settings=settings)
 
 
 # ============================================================
-# ADMIN - UPDATE TUTOR SALARY AND DATA SUPPORT
-# Add this route BEFORE review_tutor_application
+# ADMIN - UPDATE GLOBAL TUTOR SETTINGS
 # ============================================================
 
-@app.route(
-    "/admin/tutor-applications/<int:application_id>/salary",
-    methods=["POST"]
-)
+@app.route("/admin/tutor-settings", methods=["POST"])
 @role_required("admin")
-def update_tutor_salary(application_id):
+def update_global_tutor_settings():
 
     try:
-        salary_amount = int(
-            request.form.get("salary_amount", "")
-        )
+        video_salary = int(request.form.get("video_salary", ""))
+        voice_salary = int(request.form.get("voice_salary", ""))
+        video_data_gb = int(request.form.get("video_data_gb", ""))
+        voice_data_gb = int(request.form.get("voice_data_gb", ""))
 
-        data_allowance_gb = int(
-            request.form.get("data_allowance_gb", "")
-        )
-
-        if not 0 <= salary_amount <= 10000000:
-            flash("Invalid salary amount.")
+        if not 0 <= video_salary <= 10000000:
+            flash("Invalid video tutor salary.")
             return redirect(url_for("admin_tutor_applications"))
 
-        if not 0 <= data_allowance_gb <= 1000:
-            flash("Invalid data support amount.")
+        if not 0 <= voice_salary <= 10000000:
+            flash("Invalid voice-chat tutor salary.")
+            return redirect(url_for("admin_tutor_applications"))
+
+        if not 0 <= video_data_gb <= 1000:
+            flash("Invalid video tutor data allowance.")
+            return redirect(url_for("admin_tutor_applications"))
+
+        if not 0 <= voice_data_gb <= 1000:
+            flash("Invalid voice-chat tutor data allowance.")
             return redirect(url_for("admin_tutor_applications"))
 
     except (ValueError, TypeError):
@@ -6638,39 +6615,41 @@ def update_tutor_salary(application_id):
     conn = get_db()
 
     try:
-        # Confirm that this tutor application exists
-        application = conn.execute("""
-            SELECT id
-            FROM tutor_applications
-            WHERE id = ?
-        """, (application_id,)).fetchone()
-
-        if application is None:
-            flash("Tutor application not found.")
-            return redirect(url_for("admin_tutor_applications"))
+        ensure_tutor_settings(conn)
 
         conn.execute("""
-            UPDATE tutor_applications
-            SET salary_amount = ?,
-                data_allowance_gb = ?
-            WHERE id = ?
+            UPDATE tutor_settings
+            SET video_salary = ?,
+                voice_salary = ?,
+                video_data_gb = ?,
+                voice_data_gb = ?
+            WHERE id = 1
         """, (
-            salary_amount,
-            data_allowance_gb,
-            application_id
+            video_salary,
+            voice_salary,
+            video_data_gb,
+            voice_data_gb
         ))
 
         conn.commit()
-        flash("Tutor salary and data support updated successfully.")
+        flash("Global tutor salary and data settings saved.")
 
     except sqlite3.Error:
         conn.rollback()
-        flash("Could not update salary. Please try again.")
+        app.logger.exception(
+            "Global tutor settings update failed"
+        )
+        flash("Unable to save settings. Please try again.")
 
     finally:
         conn.close()
 
     return redirect(url_for("admin_tutor_applications"))
+
+
+# ============================================================
+# KEEP YOUR EXISTING review_tutor_application ROUTE BELOW
+# ============================================================
 
 
 # ============================================================
