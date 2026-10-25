@@ -5241,8 +5241,11 @@ def logout():
     )
 
 
+
 # ============================================================
 # TUTOR REGISTRATION
+# ALHIKAM LEARNING CENTER
+# Monthly Salary + Bank Details + Tutor Rules
 # ============================================================
 
 @app.route("/tutor-registration", methods=["GET", "POST"])
@@ -5258,35 +5261,117 @@ def tutor_registration():
         experience = request.form.get("experience", "").strip()
         password = request.form.get("password", "")
 
+        bank_name = request.form.get("bank_name", "").strip()
+        account_name = request.form.get("account_name", "").strip()
+        account_number = request.form.get("account_number", "").strip()
+
+        agree_rules = request.form.get("agree_rules", "")
+
+        # ----------------------------------------------------
+        # VALIDATION
+        # ----------------------------------------------------
+
         if not all([
             full_name, email, phone, subjects,
-            qualification, experience, password
+            qualification, experience, password,
+            bank_name, account_name, account_number
         ]):
-            flash("Please complete all fields.")
+            flash("Please complete all required fields.")
             return redirect(url_for("tutor_registration"))
 
         if len(password) < 6:
             flash("Password must be at least 6 characters.")
             return redirect(url_for("tutor_registration"))
 
+        if not account_number.isdigit() or len(account_number) != 10:
+            flash("Please enter a valid 10-digit bank account number.")
+            return redirect(url_for("tutor_registration"))
+
+        if agree_rules != "yes":
+            flash(
+                "You must read and accept the Tutor "
+                "Responsibilities & Employment Rules."
+            )
+            return redirect(url_for("tutor_registration"))
+
         conn = get_db()
 
         try:
+            # ------------------------------------------------
+            # SAFE DATABASE MIGRATION
+            # Adds missing columns without deleting old data.
+            # ------------------------------------------------
+
+            existing_columns = {
+                row[1]
+                for row in conn.execute(
+                    "PRAGMA table_info(tutor_applications)"
+                ).fetchall()
+            }
+
+            required_columns = {
+                "bank_name": "TEXT NOT NULL DEFAULT ''",
+                "account_name": "TEXT NOT NULL DEFAULT ''",
+                "account_number": "TEXT NOT NULL DEFAULT ''"
+            }
+
+            for column, definition in required_columns.items():
+                if column not in existing_columns:
+                    conn.execute(
+                        f"ALTER TABLE tutor_applications "
+                        f"ADD COLUMN {column} {definition}"
+                    )
+
+            # -----------------------------------------------
+            # CHECK EXISTING USER
+            # -----------------------------------------------
+
             existing_user = conn.execute("""
-                SELECT id FROM users WHERE email = ?
+                SELECT id
+                FROM users
+                WHERE email = ?
             """, (email,)).fetchone()
 
             if existing_user:
                 flash("This email already has an account.")
                 return redirect(url_for("tutor_registration"))
 
+            # -----------------------------------------------
+            # CHECK EXISTING APPLICATION
+            # -----------------------------------------------
+
+            existing_application = conn.execute("""
+                SELECT id
+                FROM tutor_applications
+                WHERE email = ?
+            """, (email,)).fetchone()
+
+            if existing_application:
+                flash(
+                    "An application with this email already exists."
+                )
+                return redirect(url_for("tutor_registration"))
+
+            # -----------------------------------------------
+            # SAVE APPLICATION
+            # New applicants remain PENDING until admin approval.
+            # -----------------------------------------------
+
             conn.execute("""
                 INSERT INTO tutor_applications (
-                    full_name, email, phone, subjects,
-                    qualification, experience, password_hash,
+                    full_name,
+                    email,
+                    phone,
+                    subjects,
+                    qualification,
+                    experience,
+                    password_hash,
+                    bank_name,
+                    account_name,
+                    account_number,
                     status
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
             """, (
                 full_name,
                 email,
@@ -5294,63 +5379,188 @@ def tutor_registration():
                 subjects,
                 qualification,
                 experience,
-                generate_password_hash(password)
+                generate_password_hash(password),
+                bank_name,
+                account_name,
+                account_number
             ))
 
             conn.commit()
-            flash("Application submitted. Please wait for admin approval.")
+
+            flash(
+                "Application submitted successfully. "
+                "Please wait for admin approval."
+            )
 
         except sqlite3.IntegrityError:
-            flash("An application with this email already exists.")
+            conn.rollback()
+            flash(
+                "An application or account with this email "
+                "already exists."
+            )
+
+        except sqlite3.Error:
+            conn.rollback()
+            app.logger.exception("Tutor registration database error")
+            flash(
+                "Unable to submit your application right now. "
+                "Please try again later."
+            )
 
         finally:
             conn.close()
 
         return redirect(url_for("tutor_registration"))
 
+    # ========================================================
+    # TUTOR REGISTRATION PAGE
+    # ========================================================
+
     return render_template_string("""
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
     <head>
+        <meta charset="UTF-8">
+        <meta name="viewport"
+              content="width=device-width, initial-scale=1">
+
         <title>Tutor Registration - Alhikam Learning Center</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+
         <style>
+            * {
+                box-sizing: border-box;
+            }
+
             body {
                 font-family: Arial, sans-serif;
                 background: #101810;
-                color: white;
-                padding: 20px;
+                color: #ffffff;
+                padding: 15px;
+                margin: 0;
+                line-height: 1.6;
             }
+
             .card {
-                max-width: 520px;
+                max-width: 560px;
                 margin: 20px auto;
-                padding: 24px;
+                padding: 22px;
                 background: #1b281e;
+                border: 1px solid #354936;
                 border-radius: 14px;
             }
-            h2 { color: #d4af37; text-align: center; }
+
+            h2, h3, h4 {
+                color: #d4af37;
+            }
+
+            h2 {
+                text-align: center;
+            }
+
+            .subtitle {
+                text-align: center;
+                color: #d7dfd5;
+            }
+
             input, textarea, button {
-                box-sizing: border-box;
+                font: inherit;
+            }
+
+            input:not([type="checkbox"]),
+            textarea {
+                display: block;
                 width: 100%;
                 padding: 12px;
-                margin: 8px 0;
+                margin: 10px 0;
                 border-radius: 7px;
                 border: 1px solid #53634f;
+                background: #111a13;
+                color: white;
             }
+
+            textarea {
+                min-height: 100px;
+                resize: vertical;
+            }
+
+            .rules {
+                background: #111a13;
+                border: 1px solid #53634f;
+                border-radius: 10px;
+                padding: 15px;
+                margin: 18px 0;
+            }
+
+            .rules li {
+                margin-bottom: 10px;
+            }
+
+            .agreement {
+                display: flex;
+                align-items: flex-start;
+                gap: 10px;
+                padding: 14px 0;
+            }
+
+            .agreement input {
+                width: 20px;
+                height: 20px;
+                flex-shrink: 0;
+                margin-top: 4px;
+                accent-color: #d4af37;
+            }
+
             button {
+                width: 100%;
+                padding: 13px;
+                margin-top: 10px;
+                border: 0;
+                border-radius: 7px;
                 background: #d4af37;
                 color: #101810;
                 font-weight: bold;
-                border: 0;
+                cursor: pointer;
             }
-            a { color: #e6c75a; }
-            .message { color: #f5d76e; }
+
+            a {
+                color: #e6c75a;
+            }
+
+            .message {
+                background: #283c2b;
+                padding: 10px;
+                border-radius: 7px;
+                color: #f5d76e;
+                overflow-wrap: anywhere;
+            }
+
+            .note {
+                color: #c5d0c3;
+                font-size: 13px;
+            }
+
+            .section-title {
+                margin-top: 24px;
+                border-bottom: 1px solid #53634f;
+                padding-bottom: 6px;
+            }
+
+            .back {
+                text-align: center;
+                margin-top: 20px;
+            }
         </style>
     </head>
+
     <body>
         <div class="card">
+
             <h2>Tutor Registration</h2>
-            <p>Apply to become a tutor at Alhikam Learning Center.</p>
+
+            <p class="subtitle">
+                Apply to become a tutor at
+                Alhikam Learning Center.
+            </p>
 
             {% with messages = get_flashed_messages() %}
                 {% for message in messages %}
@@ -5359,22 +5569,276 @@ def tutor_registration():
             {% endwith %}
 
             <form method="POST">
-                <input name="full_name" placeholder="Full Name" required>
-                <input type="email" name="email" placeholder="Email Address" required>
-                <input name="phone" placeholder="Phone Number" required>
-                <input name="subjects" placeholder="Subject(s) you teach" required>
-                <input name="qualification" placeholder="Qualification" required>
-                <textarea name="experience" placeholder="Teaching experience" required></textarea>
-                <input type="password" name="password" placeholder="Create Password (minimum 6 characters)" minlength="6" required>
-                <button type="submit">Submit Application</button>
+
+                <h3 class="section-title">
+                    Personal Information
+                </h3>
+
+                <input
+                    name="full_name"
+                    placeholder="Full Name"
+                    autocomplete="name"
+                    required
+                >
+
+                <input
+                    type="email"
+                    name="email"
+                    placeholder="Email Address"
+                    autocomplete="email"
+                    required
+                >
+
+                <input
+                    name="phone"
+                    placeholder="Phone Number"
+                    autocomplete="tel"
+                    required
+                >
+
+                <h3 class="section-title">
+                    Teaching Information
+                </h3>
+
+                <input
+                    name="subjects"
+                    placeholder="Subject(s) You Teach"
+                    required
+                >
+
+                <input
+                    name="qualification"
+                    placeholder="Qualification"
+                    required
+                >
+
+                <textarea
+                    name="experience"
+                    placeholder="Describe Your Teaching Experience"
+                    required
+                ></textarea>
+
+                <input
+                    type="password"
+                    name="password"
+                    placeholder="Create Password (minimum 6 characters)"
+                    minlength="6"
+                    autocomplete="new-password"
+                    required
+                >
+
+                <h3 class="section-title">
+                    Salary Bank Account Details
+                </h3>
+
+                <p class="note">
+                    Enter the bank account where your monthly
+                    salary should be paid. Use an account
+                    belonging to you and provide accurate
+                    details. These details are for authorized
+                    administrative use only.
+                </p>
+
+                <input
+                    name="bank_name"
+                    placeholder="Bank Name"
+                    autocomplete="off"
+                    required
+                >
+
+                <input
+                    name="account_name"
+                    placeholder="Bank Account Name"
+                    autocomplete="off"
+                    required
+                >
+
+                <input
+                    type="text"
+                    name="account_number"
+                    placeholder="10-digit Bank Account Number"
+                    inputmode="numeric"
+                    pattern="[0-9]{10}"
+                    minlength="10"
+                    maxlength="10"
+                    autocomplete="off"
+                    required
+                >
+
+                <div class="rules">
+
+                    <h3>Tutor Responsibilities & Rules</h3>
+
+                    <p>
+                        Please read these rules carefully
+                        before submitting your application.
+                    </p>
+
+                    <h4>1. Monthly Teaching Schedule</h4>
+                    <ul>
+                        <li>
+                            Tutors are expected to conduct
+                            8–10 classes per month according
+                            to the official timetable.
+                        </li>
+                        <li>
+                            The Admin or Academic Coordinator
+                            assigns class dates, times and subjects.
+                        </li>
+                        <li>
+                            The normal teaching workload is
+                            2–4 hours per week, as agreed in
+                            the employment terms.
+                        </li>
+                        <li>
+                            Tutors must prepare lessons and
+                            attend all assigned classes on time.
+                        </li>
+                    </ul>
+
+                    <h4>2. Absence and Substitute Tutors</h4>
+                    <ul>
+                        <li>
+                            Tutors must notify the Academic
+                            Coordinator as early as possible
+                            if they cannot attend a scheduled class.
+                        </li>
+                        <li>
+                            If a tutor is absent without
+                            authorization, a substitute tutor
+                            may be assigned to conduct the class.
+                        </li>
+                        <li>
+                            Payment for the substitute and
+                            any applicable salary adjustment
+                            must be documented and handled
+                            according to the written employment
+                            agreement and applicable law.
+                        </li>
+                    </ul>
+
+                    <h4>3. Three Unreported Absences</h4>
+                    <ul>
+                        <li>
+                            Missing three scheduled classes
+                            without notification or an
+                            acceptable explanation may lead
+                            to replacement or termination
+                            after review and an opportunity
+                            for the tutor to explain.
+                        </li>
+                    </ul>
+
+                    <h4>4. Weekly Mock Questions</h4>
+                    <ul>
+                        <li>
+                            Every tutor must prepare weekly
+                            mock questions for their assigned
+                            subject.
+                        </li>
+                        <li>
+                            Questions must include accurate
+                            answers and explanations.
+                        </li>
+                        <li>
+                            Questions may require approval
+                            before publication.
+                        </li>
+                    </ul>
+
+                    <h4>5. Monthly Salary</h4>
+                    <ul>
+                        <li>
+                            Tutors receive a monthly salary
+                            according to their written
+                            employment agreement.
+                        </li>
+                        <li>
+                            Salary amount, payment date,
+                            workload and applicable allowances
+                            will be stated in the agreement.
+                        </li>
+                        <li>
+                            Bank details must be accurate.
+                            Any change to payment details
+                            must be reported through an
+                            authorized administrative process.
+                        </li>
+                    </ul>
+
+                    <h4>6. Professional Conduct</h4>
+                    <ul>
+                        <li>
+                            Tutors must respect students,
+                            protect confidential information,
+                            follow the approved timetable
+                            and submit lesson reports.
+                        </li>
+                        <li>
+                            Tutors must not share student
+                            information or private account
+                            details with unauthorized persons.
+                        </li>
+                    </ul>
+
+                    <h4>7. Application and Approval</h4>
+                    <ul>
+                        <li>
+                            Submitting an application does
+                            not automatically grant tutor access.
+                        </li>
+                        <li>
+                            All applications are subject to
+                            Admin review and approval.
+                        </li>
+                        <li>
+                            Approved applicants must accept
+                            their employment terms before
+                            beginning work.
+                        </li>
+                    </ul>
+
+                    <p class="note">
+                        These rules are subject to the written
+                        employment agreement and applicable
+                        employment laws.
+                    </p>
+
+                </div>
+
+                <label class="agreement">
+                    <input
+                        type="checkbox"
+                        name="agree_rules"
+                        value="yes"
+                        required
+                    >
+
+                    <span>
+                        I have read and understood the Tutor
+                        Responsibilities & Employment Rules
+                        of Alhikam Learning Center, and I
+                        agree to comply with them if my
+                        application is approved.
+                    </span>
+                </label>
+
+                <button type="submit">
+                    Submit Application
+                </button>
+
             </form>
 
-            <p><a href="{{ url_for('login') }}">Back to Login</a></p>
+            <p class="back">
+                <a href="{{ url_for('login') }}">
+                    Back to Login
+                </a>
+            </p>
+
         </div>
     </body>
     </html>
     """)
-
 
 
 # ============================================================
