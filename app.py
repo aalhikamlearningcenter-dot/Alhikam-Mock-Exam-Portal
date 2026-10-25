@@ -1591,11 +1591,12 @@ def tutor_dashboard():
 <meta name="viewport"
       content="width=device-width, initial-scale=1">
 
-<style>
 
+<style>
 body {
-    font-family: Arial;
-    background: #f4f7f6;
+    font-family: Arial, sans-serif;
+    background: #071510;
+    color: #f1f5f3;
     padding: 20px;
     margin: 0;
 }
@@ -1605,35 +1606,38 @@ body {
     margin: auto;
 }
 
-.card {
-    background: white;
-    padding: 20px;
+.card, .stat {
+    background: #10251c;
+    border: 1px solid #24543e;
+    color: #f1f5f3;
+    padding: 22px;
     margin: 15px 0;
     border-radius: 12px;
 }
 
 .grid {
     display: grid;
-    grid-template-columns:
-        repeat(auto-fit, minmax(160px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 15px;
-}
-
-.stat {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
 }
 
 .number {
     font-size: 30px;
     font-weight: bold;
-    color: #087f5b;
+    color: #55d6a3;
+}
+
+h2, h3 {
+    color: #f5d77b;
+}
+
+p {
+    color: #d0ddd5;
 }
 
 .btn {
     display: inline-block;
-    padding: 11px 18px;
+    padding: 12px 18px;
     background: #087f5b;
     color: white;
     text-decoration: none;
@@ -1641,24 +1645,33 @@ body {
     margin: 5px;
 }
 
+.btn:hover {
+    background: #0a9b6d;
+}
+
 .question {
-    border-top: 1px solid #ddd;
+    border-top: 1px solid #38634d;
     padding: 18px 0;
+    overflow-wrap: anywhere;
 }
 
 .pending {
-    color: #d97706;
+    color: #f5c451;
     font-weight: bold;
 }
 
 .approved {
-    color: #087f5b;
+    color: #55d6a3;
     font-weight: bold;
 }
 
 .rejected {
-    color: #c92a2a;
+    color: #ff7777;
     font-weight: bold;
+}
+
+a:not(.btn) {
+    color: #f5d77b;
 }
 
 </style>
