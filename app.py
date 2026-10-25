@@ -349,22 +349,22 @@ def role_required(*roles):
     return decorator
 
 
+
 # ============================================================
-# HOME
+# HOME - DARK MODE
 # ============================================================
 
 @app.route("/")
 def index():
 
     if current_user():
-
         return redirect(
             url_for("dashboard")
         )
 
     return render_template_string("""
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
 
@@ -373,44 +373,141 @@ def index():
 <meta name="viewport"
       content="width=device-width, initial-scale=1">
 
+<meta name="theme-color" content="#071510">
+
 <style>
+
+* {
+    box-sizing: border-box;
+}
 
 body {
     font-family: Arial, sans-serif;
-    background: #f4f7f6;
+    background: #071510;
+    color: #f1f5f3;
     margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
 }
 
 .container {
+    width: 100%;
     max-width: 900px;
-    margin: 80px auto;
-    padding: 20px;
+    margin: auto;
     text-align: center;
 }
 
 .card {
-    background: white;
-    padding: 40px;
-    border-radius: 15px;
-    box-shadow: 0 5px 20px rgba(0,0,0,.08);
+    background: linear-gradient(
+        145deg,
+        #10251c,
+        #0a1b13
+    );
+    border: 1px solid #24543e;
+    padding: 45px 30px;
+    border-radius: 20px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
+}
+
+.logo-icon {
+    width: 75px;
+    height: 75px;
+    margin: 0 auto 20px;
+    border-radius: 50%;
+    background: #163b2b;
+    border: 2px solid #b8860b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #f5d77b;
+    font-size: 30px;
+    font-weight: bold;
 }
 
 h1 {
-    color: #087f5b;
+    color: #f5d77b;
+    font-size: clamp(26px, 5vw, 38px);
+    margin-bottom: 12px;
+}
+
+h2 {
+    color: #55d6a3;
+    font-size: clamp(20px, 4vw, 27px);
+    margin-top: 10px;
+}
+
+p {
+    color: #c4d4ca;
+    line-height: 1.8;
+    font-size: 16px;
+    max-width: 600px;
+    margin: 20px auto 25px;
+}
+
+.buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 25px;
 }
 
 .btn {
     display: inline-block;
-    padding: 13px 25px;
-    margin: 8px;
+    padding: 14px 25px;
     background: #087f5b;
-    color: white;
+    color: #ffffff;
     text-decoration: none;
-    border-radius: 8px;
+    border: 1px solid #15966d;
+    border-radius: 9px;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+.btn:hover {
+    background: #0a9b6d;
+    transform: translateY(-2px);
 }
 
 .btn.secondary {
-    background: #333;
+    background: #b8860b;
+    border-color: #d5a72b;
+    color: #ffffff;
+}
+
+.btn.secondary:hover {
+    background: #d5a72b;
+}
+
+.footer {
+    color: #82998b;
+    font-size: 13px;
+    margin-top: 25px;
+}
+
+@media (max-width: 480px) {
+
+    body {
+        padding: 14px;
+    }
+
+    .card {
+        padding: 32px 18px;
+        border-radius: 15px;
+    }
+
+    .buttons {
+        flex-direction: column;
+    }
+
+    .btn {
+        width: 100%;
+        padding: 14px 12px;
+    }
+
 }
 
 </style>
@@ -423,6 +520,10 @@ h1 {
 
 <div class="card">
 
+<div class="logo-icon">
+AL
+</div>
+
 <h1>
 Alhikam Learning Center
 </h1>
@@ -432,9 +533,13 @@ Mock Examination Portal
 </h2>
 
 <p>
-Online CBT examination platform for
-students and tutors.
+Welcome to Alhikam Learning Center's online
+CBT examination platform. Students can take
+mock examinations, check their results, and
+qualified tutors can contribute to learning.
 </p>
+
+<div class="buttons">
 
 <a class="btn"
    href="{{ url_for('login') }}">
@@ -445,6 +550,14 @@ Login
    href="{{ url_for('register') }}">
 Student Registration
 </a>
+
+</div>
+
+<div class="footer">
+Learn Today. Achieve Tomorrow.
+<br>
+© Alhikam Learning Center
+</div>
 
 </div>
 
