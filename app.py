@@ -5955,6 +5955,7 @@ def tutor_registration():
     """)
 
 
+
 # ============================================================
 # ADMIN - TUTOR APPLICATIONS
 # ============================================================
@@ -5965,120 +5966,322 @@ def admin_tutor_applications():
 
     conn = get_db()
 
+    try:
+        # Read existing database columns
+        columns = {
+            row[1]
+            for row in conn.execute(
+                "PRAGMA table_info(tutor_applications)"
+            ).fetchall()
+        }
 
-    # Add tutor salary fields safely if missing
-    columns = {
-        row["name"]
-        for row in conn.execute(
-            "PRAGMA table_info(tutor_applications)"
-        ).fetchall()
-    }
+        # Add missing bank fields safely
+        if "bank_name" not in columns:
+            conn.execute("""
+                ALTER TABLE tutor_applications
+                ADD COLUMN bank_name TEXT DEFAULT ''
+            """)
 
-    if "salary_amount" not in columns:
-        conn.execute("""
-            ALTER TABLE tutor_applications
-            ADD COLUMN salary_amount INTEGER DEFAULT 0
-        """)
+        if "account_name" not in columns:
+            conn.execute("""
+                ALTER TABLE tutor_applications
+                ADD COLUMN account_name TEXT DEFAULT ''
+            """)
 
-    if "data_allowance_gb" not in columns:
-        conn.execute("""
-            ALTER TABLE tutor_applications
-            ADD COLUMN data_allowance_gb INTEGER DEFAULT 0
-        """)
+        if "account_number" not in columns:
+            conn.execute("""
+                ALTER TABLE tutor_applications
+                ADD COLUMN account_number TEXT DEFAULT ''
+            """)
 
-    conn.commit()
+        if "salary_amount" not in columns:
+            conn.execute("""
+                ALTER TABLE tutor_applications
+                ADD COLUMN salary_amount INTEGER DEFAULT 0
+            """)
 
-    applications = conn.execute("""
-        SELECT *
-        FROM tutor_applications
-        ORDER BY
-            CASE WHEN status = 'pending' THEN 0 ELSE 1 END,
-            id DESC
-    """).fetchall()
+        if "data_allowance_gb" not in columns:
+            conn.execute("""
+                ALTER TABLE tutor_applications
+                ADD COLUMN data_allowance_gb INTEGER DEFAULT 0
+            """)
 
-    conn.close()
+        conn.commit()
+
+        # Get applications after ensuring columns exist
+        applications = conn.execute("""
+            SELECT *
+            FROM tutor_applications
+            ORDER BY
+                CASE
+                    WHEN status = 'pending' THEN 0
+                    WHEN status = 'approved' THEN 1
+                    ELSE 2
+                END,
+                id DESC
+        """).fetchall()
+
+    finally:
+        conn.close()
 
     return render_template_string("""
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
     <head>
-        <title>Tutor Applications - Alhikam</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta charset="UTF-8">
+        <meta name="viewport"
+              content="width=device-width, initial-scale=1">
+
+        <title>Tutor Applications - Alhikam Learning Center</title>
+
         <style>
+            * {
+                box-sizing: border-box;
+            }
+
             body {
+                margin: 0;
+                padding: 15px;
                 font-family: Arial, sans-serif;
                 background: #101810;
-                color: white;
-                padding: 15px;
+                color: #f5f5f5;
             }
+
             .container {
                 max-width: 850px;
                 margin: auto;
             }
+
             .card {
                 background: #1b281e;
+                border: 1px solid #354936;
                 padding: 18px;
-                margin: 15px 0;
+                margin: 16px 0;
                 border-radius: 12px;
                 overflow-wrap: anywhere;
             }
-            h2, h3 { color: #d4af37; }
-            .pending { color: #ffd166; }
-            .approved { color: #70e090; }
-            .rejected { color: #ff8585; }
-            button {
-                padding: 11px;
-                margin: 5px 4px 5px 0;
-                border: 0;
-                border-radius: 6px;
+
+            h2, h3 {
+                color: #d4af37;
+            }
+
+            .section {
+                background: #121c14;
+                padding: 14px;
+                margin-top: 16px;
+                border-radius: 9px;
+                border: 1px solid #354936;
+            }
+
+            .pending {
+                color: #ffd166;
+            }
+
+            .approved {
+                color: #70e090;
+            }
+
+            .rejected {
+                color: #ff8585;
+            }
+
+            label {
+                display: block;
+                margin-top: 12px;
+                margin-bottom: 6px;
+                color: #e6c75a;
                 font-weight: bold;
             }
-            .approve { background: #16834a; color: white; }
-            .reject { background: #b52b35; color: white; }
-            a { color: #e6c75a; }
+
+            input {
+                display: block;
+                width: 100%;
+                padding: 12px;
+                border-radius: 7px;
+                border: 1px solid #536553;
+                background: #0d140f;
+                color: white;
+                font-size: 16px;
+            }
+
+            button {
+                padding: 12px;
+                margin: 8px 5px 0 0;
+                border: 0;
+                border-radius: 7px;
+                font-weight: bold;
+                cursor: pointer;
+            }
+
+            .save {
+                width: 100%;
+                background: #d4af37;
+                color: #101810;
+                margin-top: 15px;
+            }
+
+            .approve {
+                background: #16834a;
+                color: white;
+            }
+
+            .reject {
+                background: #b52b35;
+                color: white;
+            }
+
+            a {
+                color: #e6c75a;
+            }
+
+            .muted {
+                color: #b8c4b8;
+            }
         </style>
     </head>
+
     <body>
     <div class="container">
-        <h2>Tutor Applications</h2>
-        <p>Review each application before granting tutor access.</p>
+
+        <h2>Alhikam Learning Center</h2>
+        <h3>Tutor Applications Dashboard</h3>
+
+        <p class="muted">
+            Review tutor applications, bank details, monthly salary
+            and data support before approving tutors.
+        </p>
 
         {% for application in applications %}
         <div class="card">
+
             <h3>{{ application["full_name"] }}</h3>
+
             <p>Email: {{ application["email"] }}</p>
             <p>Phone: {{ application["phone"] }}</p>
             <p>Subjects: {{ application["subjects"] }}</p>
             <p>Qualification: {{ application["qualification"] }}</p>
             <p>Experience: {{ application["experience"] }}</p>
+            <p>Applied: {{ application["created_at"] }}</p>
+
             <p>
                 Status:
                 <strong class="{{ application['status'] }}">
                     {{ application["status"]|upper }}
                 </strong>
             </p>
-            <p>Applied: {{ application["created_at"] }}</p>
 
+            <!-- BANK DETAILS -->
+            <div class="section">
+                <h3>Bank Account Details</h3>
+
+                <p>
+                    Bank Name:
+                    {{ application["bank_name"] or "Not provided" }}
+                </p>
+
+                <p>
+                    Account Name:
+                    {{ application["account_name"] or "Not provided" }}
+                </p>
+
+                <p>
+                    Account Number:
+                    {{ application["account_number"] or "Not provided" }}
+                </p>
+            </div>
+
+            <!-- SALARY SETTINGS -->
+            <div class="section">
+                <h3>Manage Tutor Salary</h3>
+
+                <p>
+                    Current Monthly Salary:
+                    <strong>
+                        ₦{{ "{:,}".format(
+                            application["salary_amount"] or 0
+                        ) }}
+                    </strong>
+                </p>
+
+                <p>
+                    Current Data Support:
+                    <strong>
+                        {{ application["data_allowance_gb"] or 0 }} GB
+                    </strong>
+                </p>
+
+                <form method="POST"
+                      action="{{ url_for(
+                          'update_tutor_salary',
+                          application_id=application['id']
+                      ) }}">
+
+                    <label>Monthly Salary (₦)</label>
+                    <input
+                        type="number"
+                        name="salary_amount"
+                        min="0"
+                        max="10000000"
+                        step="1"
+                        value="{{ application['salary_amount'] or 0 }}"
+                        required>
+
+                    <label>Monthly Data Support (GB)</label>
+                    <input
+                        type="number"
+                        name="data_allowance_gb"
+                        min="0"
+                        max="1000"
+                        step="1"
+                        value="{{ application['data_allowance_gb'] or 0 }}"
+                        required>
+
+                    <button class="save" type="submit">
+                        Save Salary & Data Support
+                    </button>
+                </form>
+            </div>
+
+            <!-- APPROVE OR REJECT -->
             {% if application["status"] == "pending" %}
-            <form method="POST"
-                  action="{{ url_for('review_tutor_application',
-                                     application_id=application['id']) }}">
-                <button class="approve" type="submit"
-                        name="decision" value="approve">
-                    Approve Tutor
-                </button>
-                <button class="reject" type="submit"
-                        name="decision" value="reject">
-                    Reject Application
-                </button>
-            </form>
+            <div class="section">
+                <h3>Application Decision</h3>
+
+                <form method="POST"
+                      action="{{ url_for(
+                          'review_tutor_application',
+                          application_id=application['id']
+                      ) }}">
+
+                    <button class="approve"
+                            type="submit"
+                            name="decision"
+                            value="approve">
+                        Approve Tutor
+                    </button>
+
+                    <button class="reject"
+                            type="submit"
+                            name="decision"
+                            value="reject">
+                        Reject Application
+                    </button>
+                </form>
+            </div>
             {% endif %}
+
         </div>
+
         {% else %}
-        <p>No tutor applications yet.</p>
+            <p>No tutor applications yet.</p>
         {% endfor %}
 
-        <p><a href="{{ url_for('admin_dashboard') }}">Back to Admin Dashboard</a></p>
+        <p>
+            <a href="{{ url_for('admin_dashboard') }}">
+                Back to Admin Dashboard
+            </a>
+        </p>
+
     </div>
     </body>
     </html>
@@ -6086,7 +6289,79 @@ def admin_tutor_applications():
 
 
 # ============================================================
+# ADMIN - UPDATE TUTOR SALARY AND DATA SUPPORT
+# Add this route BEFORE review_tutor_application
+# ============================================================
+
+@app.route(
+    "/admin/tutor-applications/<int:application_id>/salary",
+    methods=["POST"]
+)
+@role_required("admin")
+def update_tutor_salary(application_id):
+
+    try:
+        salary_amount = int(
+            request.form.get("salary_amount", "")
+        )
+
+        data_allowance_gb = int(
+            request.form.get("data_allowance_gb", "")
+        )
+
+        if not 0 <= salary_amount <= 10000000:
+            flash("Invalid salary amount.")
+            return redirect(url_for("admin_tutor_applications"))
+
+        if not 0 <= data_allowance_gb <= 1000:
+            flash("Invalid data support amount.")
+            return redirect(url_for("admin_tutor_applications"))
+
+    except (ValueError, TypeError):
+        flash("Please enter valid numbers.")
+        return redirect(url_for("admin_tutor_applications"))
+
+    conn = get_db()
+
+    try:
+        # Confirm that this tutor application exists
+        application = conn.execute("""
+            SELECT id
+            FROM tutor_applications
+            WHERE id = ?
+        """, (application_id,)).fetchone()
+
+        if application is None:
+            flash("Tutor application not found.")
+            return redirect(url_for("admin_tutor_applications"))
+
+        conn.execute("""
+            UPDATE tutor_applications
+            SET salary_amount = ?,
+                data_allowance_gb = ?
+            WHERE id = ?
+        """, (
+            salary_amount,
+            data_allowance_gb,
+            application_id
+        ))
+
+        conn.commit()
+        flash("Tutor salary and data support updated successfully.")
+
+    except sqlite3.Error:
+        conn.rollback()
+        flash("Could not update salary. Please try again.")
+
+    finally:
+        conn.close()
+
+    return redirect(url_for("admin_tutor_applications"))
+
+
+# ============================================================
 # ADMIN - APPROVE OR REJECT TUTOR
+# Keep your existing review_tutor_application route below
 # ============================================================
 
 @app.route(
